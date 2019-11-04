@@ -1,5 +1,7 @@
 var cryptoJS = require('crypto-js');
 
+var BlockChain = require('./BlockChain');
+
 //generate hash of (Datetime + random)
 function calculateNodeId() {
 
@@ -12,7 +14,7 @@ function calculateNodeId() {
 
     let nodeIdWithoutHash = dateTimeStr + randomNumberStr;
 
-    //sha512 hash
+    //sha256 hash of date and random number
     let nodeId = cryptoJS.SHA256(nodeIdWithoutHash);
 
     return nodeId.toString();
@@ -24,9 +26,11 @@ module.exports = class Node {
     constructor(hostName, port) {
         this.name = "SM_Node_1_" + hostName + "_" + port;
         this.nodeId = calculateNodeId();
-        this.peers = new Map();
+        this.peers = new Map(); // map(nodeId --> URL)
         this.selfUrl = `http://${hostName}:${port}`;
-        //this.chain = new Blockchain();
+        this.chain = new BlockChain();
+        //TODO
+        this.chainId = "";
 
     }
 
@@ -34,10 +38,14 @@ module.exports = class Node {
         let response = {
             "about": this.name,
             "nodeId": this.nodeId,
-            //"chainId": this.chainId,
+            "chainId": this.chainId,
             "nodeUrl": this.selfUrl,
             "peers": this.peers.size,
-
+            "currentDifficulty": this.chain.currentDifficulty,
+            "blocksCount": this.chain.blocks.length,
+            "cumulativeDifficulty": this.chain.calculateCumulativeDifficulty(),
+            "confirmedTransactions": this.chain.calculateConfirmedTransactions(),
+            "pendingTransactions": this.chain.pendingTransactions.length
         };
 
         return response;
