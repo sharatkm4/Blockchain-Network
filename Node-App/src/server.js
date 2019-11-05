@@ -6,18 +6,25 @@ var Node = require("./Node");
 
 var node = null;
 
+// Home Page
 app.get('/', function (req, res) {
     console.log("GET request for home page");
     res.end(JSON.stringify({"message" : "Blockhain network !!"}));
 });
 
-
+// General information
+// Endpoint for receiving general information about the node.
 app.get('/info', (req, res) => {
     let response = node.getNodeInfo();
     res.end(JSON.stringify(response));
 });
 
-
+// Reset the chain Endpoint
+// This endpoint will reset the chain and start it from the beginning; this is used only for debugging.
+app.get('/debug/reset-chain', (req, res) => {
+    let response = node.resetChain();
+    res.end(JSON.stringify(response));
+});
 
 
 var listeningPort = 5555;

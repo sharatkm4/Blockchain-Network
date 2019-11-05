@@ -26,11 +26,11 @@ module.exports = class Block {
 
     //TODO
     calculateBlockDataHash() {
-        return "";
+        return "TestDataHash";
     }
 
     //TODO
     calculateBlockHash() {
-        return "";
+        return "TestBlockHash";
     }
 }

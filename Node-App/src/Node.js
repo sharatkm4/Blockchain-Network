@@ -29,11 +29,11 @@ module.exports = class Node {
         this.peers = new Map(); // map(nodeId --> URL)
         this.selfUrl = `http://${hostName}:${port}`;
         this.chain = new BlockChain();
-        //TODO
-        this.chainId = "";
-
+        this.chainId = this.chain.blocks[0].blockHash;
     }
 
+    // General information
+    // Endpoint for receiving general information about the node.
     getNodeInfo() {
         let response = {
             "about": this.name,
@@ -50,5 +50,13 @@ module.exports = class Node {
 
         return response;
     }
+
+    // Reset the chain Endpoint
+    // This endpoint will reset the chain and start it from the beginning; this is used only for debugging.
+    resetChain() {
+        this.chain = new BlockChain();
+        return {"message ": "The chain was reset to its genesis block"};
+    }
+
 
 };
