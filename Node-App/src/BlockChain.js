@@ -1,8 +1,10 @@
+var GenesisBlock = require('./GenesisBlock');
+
 module.exports = class BlockChain {
 
 
     constructor() {
-        this.blocks = []; // Block[]
+        this.blocks = [GenesisBlock.genesisBlock]; // Block[]
         this.pendingTransactions = []; // Transaction[]
         this.currentDifficulty = 3; //integer
         this.miningJobs = new Map(); // map(blockDataHash -> Block);
