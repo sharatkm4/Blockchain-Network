@@ -1,5 +1,7 @@
 var GenesisBlock = require('./GenesisBlock');
 
+var utils = require('./utils');
+
 module.exports = class BlockChain {
 
 
@@ -24,5 +26,15 @@ module.exports = class BlockChain {
             confirmedTransactions += this.blocks[i].transactions.length;
         }
         return confirmedTransactions;
+    }
+
+    getJsonObject() {
+        let jsonObject = Object.create({});
+        jsonObject.blocks = this.blocks;
+        jsonObject.pendingTransactions = this.pendingTransactions;
+        jsonObject.currentDifficulty = this.currentDifficulty;
+        jsonObject.miningJobs = utils.strMapToObj(this.miningJobs);
+
+        return jsonObject;
     }
 };

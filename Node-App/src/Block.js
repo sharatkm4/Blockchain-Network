@@ -21,7 +21,11 @@ module.exports = class Block {
 
         this.nonce = nonce;
         this.dateCreated = dateCreated;
-        this.blockHash = blockHash;
+        if (blockHash === undefined) {
+            this.blockHash = this.calculateBlockHash();
+        } else {
+            this.blockHash = blockHash;
+        }
     }
 
     //TODO

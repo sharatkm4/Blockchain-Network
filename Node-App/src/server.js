@@ -19,6 +19,13 @@ app.get('/info', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// Debug endpoint
+// This endpoint will print everything about the node. The blocks, peers, chain, pending transactions and much more.
+app.get('/debug', (req, res) => {
+    let response = node.getDebugInfo();
+    res.end(JSON.stringify(response));
+});
+
 // Reset the chain Endpoint
 // This endpoint will reset the chain and start it from the beginning; this is used only for debugging.
 app.get('/debug/reset-chain', (req, res) => {

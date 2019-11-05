@@ -2,6 +2,8 @@ var cryptoJS = require('crypto-js');
 
 var BlockChain = require('./BlockChain');
 
+var utils = require('./utils');
+
 //generate hash of (Datetime + random)
 function calculateNodeId() {
 
@@ -30,6 +32,7 @@ module.exports = class Node {
         this.selfUrl = `http://${hostName}:${port}`;
         this.chain = new BlockChain();
         this.chainId = this.chain.blocks[0].blockHash;
+
     }
 
     // General information
@@ -49,6 +52,25 @@ module.exports = class Node {
         };
 
         return response;
+    }
+
+    // Debug endpoint
+    // This endpoint will print everything about the node. The blocks, peers, chain, pending transactions and much more.
+    getDebugInfo() {
+
+        let response = {
+            "nodeId": this.nodeId,
+            "selfUrl": this.selfUrl,
+            "peers": utils.strMapToObj(this.peers),
+            "chainId": this.chainId,
+            "chain": this.chain.getJsonObject()
+            //TODO Implement confirmedBalances
+
+        };
+
+        return response;
+
+
     }
 
     // Reset the chain Endpoint
