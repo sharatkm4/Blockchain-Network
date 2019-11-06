@@ -17,7 +17,7 @@ const totalSupplyOfCoins = 1000000000; // 1000 coins (1000 * 1,000,000 micro coi
 const genesisFee = 0;
 const genesisData = "genesis tx";
 const genesisMinedInBlockIndex = 0;
-const genesisTransferSuccessful = false;
+const genesisTransferSuccessful = true;
 
 //TODO
 let faucetAddress = "0825b1b7d17ea1c1ff9ebe1c74d7c6d8a4a104dc";

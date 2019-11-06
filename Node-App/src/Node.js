@@ -63,9 +63,8 @@ module.exports = class Node {
             "selfUrl": this.selfUrl,
             "peers": utils.strMapToObj(this.peers),
             "chainId": this.chainId,
-            "chain": this.chain.getJsonObject()
-            //TODO Implement confirmedBalances
-
+            "chain": this.chain.getJsonObject(),
+            "confirmedBalances": utils.strMapToObj(this.chain.getConfirmedBalances())
         };
 
         return response;
