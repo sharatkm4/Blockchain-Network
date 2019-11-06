@@ -79,5 +79,25 @@ module.exports = class Node {
         return {"message ": "The chain was reset to its genesis block"};
     }
 
+    // All blocks Endpoint
+    // The endpoint will print all the blocks in the node’s chain.
+    getAllBlocksInfo() {
+        let response = this.chain.blocks;
+        return response;
+    }
+
+    // Block by Index Endpoint
+    // The endpoint will print the block with the index that you specify
+    getBlockInfoByIndex(index) {
+        let response = null;
+
+        if (index >= this.chain.blocks.length || !utils.isNumeric(index)) {
+            response = { errorMsg: "Invalid block index !!" }
+        } else {
+            response = this.chain.blocks[index];
+        }
+
+        return response;
+    }
 
 };

@@ -6,6 +6,8 @@ var Node = require("./Node");
 
 var node = null;
 
+var HttpStatus = require('http-status-codes');
+
 // Home Page
 app.get('/', function (req, res) {
     console.log("GET request for home page");
@@ -33,6 +35,25 @@ app.get('/debug/reset-chain', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// All blocks Endpoint
+// The endpoint will print all the blocks in the node’s chain.
+app.get('/blocks', (req, res) => {
+    let response = node.getAllBlocksInfo();
+    res.end(JSON.stringify(response));
+});
+
+// Block by Index Endpoint
+// The endpoint will print the block with the index that you specify
+app.get('/blocks/:index', (req, res) => {
+    let blockIndex = req.params.index;
+    let response = node.getBlockInfoByIndex(blockIndex);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.NOT_FOUND);
+    }
+
+    res.end(JSON.stringify(response));
+});
 
 var listeningPort = 5555;
 
