@@ -80,6 +80,16 @@ module.exports = class BlockChain {
         return addressBalancesMap;
     }
 
+    // Return both confirmed and pending transactions
+    getPendingAndConfirmedTransactions() {
+        let pendingAndConfirmedTransactions = [];
+
+        pendingAndConfirmedTransactions.push.apply(pendingAndConfirmedTransactions, this.getConfirmedTransactions());
+        pendingAndConfirmedTransactions.push.apply(pendingAndConfirmedTransactions, this.pendingTransactions);
+
+        return pendingAndConfirmedTransactions;
+    }
+
     getJsonObject() {
         let jsonObject = Object.create({});
         jsonObject.blocks = this.blocks;

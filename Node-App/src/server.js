@@ -55,6 +55,34 @@ app.get('/blocks/:index', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// Get Pending Transactions Endpoint
+// This endpoint will print the list with transactions that have not been mined.
+app.get('/transactions/pending', (req, res) => {
+    let response = node.getPendingTransactions();
+    res.end(JSON.stringify(response));
+});
+
+// Get Confirmed Transactions
+// This endpoint will print the list of the transactions that are included in blocks.
+app.get('/transactions/confirmed', (req, res) => {
+    let response = node.getConfirmedTransactions();
+    res.end(JSON.stringify(response));
+});
+
+// Get Transaction by Hash Endpoint
+// This endpoint will return a transaction identified by hash
+app.get('/transactions/:hash', (req, res) => {
+    let hash = req.params.hash;
+    let response = node.getTransactionByHash(hash);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.NOT_FOUND);
+    }
+
+    res.end(JSON.stringify(response));
+});
+
+
 var listeningPort = 5555;
 
 var server = app.listen(listeningPort, function () {

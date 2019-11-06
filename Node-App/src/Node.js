@@ -100,4 +100,66 @@ module.exports = class Node {
         return response;
     }
 
+    // Get Pending Transactions Endpoint
+    // This endpoint will print the list with transactions that have not been mined.
+    getPendingTransactions() {
+
+        this.chain.pendingTransactions.push(this.chain.blocks[0].transactions[0]);
+
+        let pendingTransactions = this.chain.pendingTransactions;
+        let pendingTransactionsModifiedOutput = [];
+
+        for (let i = 0; i < pendingTransactions.length; i++) {
+            let pendingTransaction = pendingTransactions[i];
+            let pendingTransactionModifiedOutput = {
+                from: pendingTransaction.from,
+                to: pendingTransaction.to,
+                value: pendingTransaction.value,
+                fee: pendingTransaction.fee,
+                dateCreated: pendingTransaction.dateCreated,
+                data: pendingTransaction.data,
+                senderPubKey: pendingTransaction.senderPubKey,
+                transactionDataHash: pendingTransaction.transactionDataHash,
+                senderSignature: pendingTransaction.senderSignature
+            }
+
+            pendingTransactionsModifiedOutput.push(pendingTransactionModifiedOutput);
+        }
+
+        return pendingTransactionsModifiedOutput;
+
+    }
+
+    // Get Confirmed Transactions
+    // This endpoint will print the list of the transactions that are included in blocks.
+    getConfirmedTransactions() {
+        let response = this.chain.getConfirmedTransactions();
+        return response;
+    }
+
+    // Get Transaction by Hash Endpoint
+    // This endpoint will return a transaction identified by hash
+    getTransactionByHash(hash) {
+        let pendingAndConfirmedTransactions = this.chain.getPendingAndConfirmedTransactions();
+        let transaction;
+
+        for (let i = 0; i < pendingAndConfirmedTransactions.length; i++) {
+            //console.log(pendingAndConfirmedTransactions[i].transactionDataHash);
+            if (pendingAndConfirmedTransactions[i].transactionDataHash === hash) {
+                transaction = pendingAndConfirmedTransactions[i];
+                break;
+            }
+        }
+
+        let response;
+        if(transaction){
+            response = transaction;
+        } else {
+            response = { errorMsg: "Invalid transaction hash!!" }
+        }
+        return response;
+
+    }
+
+
 };
