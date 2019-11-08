@@ -161,5 +161,16 @@ module.exports = class Node {
 
     }
 
+    // List All Account Balance
+    // This endpoint will return all the balances in the network.
+    // Assumption: Accounts with non zero confirmed balance will also be returned
+    getAllAccountBalances() {
+
+        let addressBalancesMap = this.chain.getConfirmedBalances();
+        let response = utils.strMapToObj(addressBalancesMap);
+        return response;
+
+    }
+
 
 };

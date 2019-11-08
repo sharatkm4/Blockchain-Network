@@ -82,6 +82,13 @@ app.get('/transactions/:hash', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// List All Account Balance
+// This endpoint will return all the balances in the network.
+app.get('/balances', (req, res) => {
+    let response = node.getAllAccountBalances();
+    res.end(JSON.stringify(response));
+});
+
 
 var listeningPort = 5555;
 
