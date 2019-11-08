@@ -23,7 +23,16 @@ const genesisTransferSuccessful = true;
 let faucetAddress = "0825b1b7d17ea1c1ff9ebe1c74d7c6d8a4a104dc";
 
 const genesisCoinBaseTransaction = new Transaction(
-    genesisFromAddress, faucetAddress, totalSupplyOfCoins, genesisFee, genesisDateCreated, genesisData, genesisSenderPubKey, [genesisSenderSignature, genesisSenderSignature], genesisMinedInBlockIndex, genesisTransferSuccessful);
+    genesisFromAddress,
+    faucetAddress,
+    totalSupplyOfCoins,
+    genesisFee,
+    genesisDateCreated,
+    genesisData,
+    genesisSenderPubKey,
+    [genesisSenderSignature, genesisSenderSignature],
+    genesisMinedInBlockIndex,
+    genesisTransferSuccessful);
 
 const genesisBlockIndex = 0;
 const genesisBlockDifficulty = 0;
@@ -32,7 +41,13 @@ const genesisPrevBlockhash = "00000000000000000000000000000000000000000000000000
 const genesisNonce = 0;
 
 const genesisBlock = new Block(
-    genesisBlockIndex, [genesisCoinBaseTransaction], genesisBlockDifficulty, genesisPrevBlockhash, genesisFromAddress, genesisNonce, genesisDateCreated);
+    genesisBlockIndex,
+    [genesisCoinBaseTransaction],
+    genesisBlockDifficulty,
+    genesisPrevBlockhash,
+    genesisFromAddress,
+    genesisNonce,
+    genesisDateCreated);
 
 module.exports = {
     genesisBlock
