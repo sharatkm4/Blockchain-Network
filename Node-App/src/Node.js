@@ -195,4 +195,114 @@ module.exports = class Node {
         return response;
     }
 
+    // Get Balance for Address Endpoint
+    // This endpoint will return the balance of a specified address in the network.
+    //
+    // Balances Invalid for Address
+    // If the address is valid but it is not used, return zero for the balance; if it is an invalid address, return an error message.
+    getBalanceForAddress(address) {
+
+        let response;
+        if (utils.isValidAddress(address)) {
+            let transactionsForAddress = this.chain.getTransactionsForAddress(address);
+
+            let safeBalance = 0;
+            let confirmedBalance = 0;
+            let pendingBalance = 0;
+
+            let safeConfirmCount = 6;
+
+            for (let i = 0; i < transactionsForAddress.length; i++) {
+                let transaction = transactionsForAddress[i];
+
+                /*let numberOfConfirmations = 0;
+                if (transaction.minedInBlockIndex === null) {
+                    numberOfConfirmations = 0;
+                } else {
+                    numberOfConfirmations = this.chain.blocks.length - transaction.minedInBlockIndex;
+                    //console.log(numberOfConfirmations);
+                }*/
+                //let numberOfConfirmations = this.chain.blocks.length - transaction.minedInBlockIndex;
+
+                let numberOfConfirmations = 0;
+                if (typeof(transaction.minedInBlockIndex) === 'number') {
+                    numberOfConfirmations = this.chain.blocks.length - transaction.minedInBlockIndex;
+                    console.log('numberOfConfirmations ' + numberOfConfirmations);
+                }
+
+                // Calculate balances in case of received transaction
+                // Each successful received transaction adds value
+                if (transaction.to === address) {
+                    console.log('====to=====');
+
+                    // pendingBalance expected balance (0 confirmations)
+                    // It is assumed that all pending transactions will be successful
+                    if (numberOfConfirmations === 0 || transaction.transferSuccessful) {
+                        pendingBalance += transaction.value;
+                        console.log('pendingBalance ' + pendingBalance);
+                    }
+
+                    // confirmedBalance 1 or more confirmations
+                    if (numberOfConfirmations >= 1 && transaction.transferSuccessful) {
+                        confirmedBalance += transaction.value;
+                        console.log('confirmedBalance ' + confirmedBalance);
+                    }
+
+                    // safeBalance 6 confirmations or more confirmations
+                    if (numberOfConfirmations >= safeConfirmCount && transaction.transferSuccessful){
+                        safeBalance += transaction.value;
+                        console.log('safeBalance ' + safeBalance);
+                    }
+                }
+
+                // Calculate balances in case of spent transaction
+                // All spent transactions subtract the transaction fee
+                // Successful spent transactions subtract value
+
+                if (transaction.from === address) {
+                    console.log('====from=====');
+
+                    // pendingBalance expected balance (0 confirmations)
+                    // It is assumed that all pending transactions will be successful
+                    if (numberOfConfirmations === 0 || transaction.transferSuccessful) {
+                        pendingBalance -= transaction.fee;
+                        pendingBalance -= transaction.value;
+                        console.log('pendingBalance ' + pendingBalance);
+                    }
+
+                    // confirmedBalance 1 or more confirmations
+                    if (numberOfConfirmations >= 1) {
+                        confirmedBalance -= transaction.fee;
+                        if (transaction.transferSuccessful)
+                            confirmedBalance -= transaction.value;
+                        console.log('confirmedBalance ' + confirmedBalance);
+                    }
+
+                    // safeBalance 6 confirmations or more confirmations
+                    if (numberOfConfirmations >= safeConfirmCount) {
+                        safeBalance -= transaction.fee;
+                        if (transaction.transferSuccessful)
+                            safeBalance -= transaction.value;
+                        console.log('safeBalance ' + safeBalance);
+                    }
+                }
+            }
+
+            response = {
+                safeBalance: safeBalance,
+                confirmedBalance: confirmedBalance,
+                pendingBalance: pendingBalance
+            }
+
+        } else {
+            response = { errorMsg: "Invalid address" }
+        }
+
+        return response;
+
+    }
+
+
+
+
 };

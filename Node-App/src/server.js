@@ -89,7 +89,6 @@ app.get('/balances', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
-
 // List Transactions for Address
 // This endpoint will print all transactions for address.
 app.get('/address/:address/transactions', (req, res) => {
@@ -102,6 +101,24 @@ app.get('/address/:address/transactions', (req, res) => {
 
     res.end(JSON.stringify(response));
 });
+
+// Get Balance for Address Endpoint
+// This endpoint will return the balance of a specified address in the network.
+//
+// Balances Invalid for Address
+// If the address is valid but it is not used, return zero for the balance; if it is an invalid address, return an error message.
+app.get('/address/:address/balance', (req, res) => {
+    let address = req.params.address;
+    let response = node.getBalanceForAddress(address);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.NOT_FOUND);
+    }
+
+    res.end(JSON.stringify(response));
+});
+
+
 
 var listeningPort = 5555;
 
