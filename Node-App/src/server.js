@@ -90,6 +90,19 @@ app.get('/balances', (req, res) => {
 });
 
 
+// List Transactions for Address
+// This endpoint will print all transactions for address.
+app.get('/address/:address/transactions', (req, res) => {
+    let address = req.params.address;
+    let response = node.getTransactionsForAddress(address);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.NOT_FOUND);
+    }
+
+    res.end(JSON.stringify(response));
+});
+
 var listeningPort = 5555;
 
 var server = app.listen(listeningPort, function () {

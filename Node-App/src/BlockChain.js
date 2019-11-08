@@ -81,13 +81,22 @@ module.exports = class BlockChain {
     }
 
     // Return both confirmed and pending transactions
-    getPendingAndConfirmedTransactions() {
+    getAllTransactions() {
         let pendingAndConfirmedTransactions = [];
 
         pendingAndConfirmedTransactions.push.apply(pendingAndConfirmedTransactions, this.getConfirmedTransactions());
         pendingAndConfirmedTransactions.push.apply(pendingAndConfirmedTransactions, this.pendingTransactions);
 
         return pendingAndConfirmedTransactions;
+    }
+
+    // Returns an array of both confirmed and pending transactions for a given address
+    // Address can be either in 'from' or 'to'
+    getTransactionsForAddress(address) {
+        let allTransactions = this.getAllTransactions();
+        let transactionsForAddress = allTransactions.filter(transaction => transaction.from === address || transaction.to === address);
+        return transactionsForAddress;
+
     }
 
     getJsonObject() {

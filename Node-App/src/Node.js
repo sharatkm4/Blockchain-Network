@@ -140,7 +140,7 @@ module.exports = class Node {
     // Get Transaction by Hash Endpoint
     // This endpoint will return a transaction identified by hash
     getTransactionByHash(hash) {
-        let pendingAndConfirmedTransactions = this.chain.getPendingAndConfirmedTransactions();
+        let pendingAndConfirmedTransactions = this.chain.getAllTransactions();
         let transaction;
 
         for (let i = 0; i < pendingAndConfirmedTransactions.length; i++) {
@@ -172,5 +172,27 @@ module.exports = class Node {
 
     }
 
+    // List Transactions for Address
+    // This endpoint will print all transactions for address.
+    // Assumption: Transactions are returned for addresses in either 'From' or 'To'
+    getTransactionsForAddress(address) {
+
+        let response;
+        if (utils.isValidAddress(address)) {
+            let transactionsForAddress = this.chain.getTransactionsForAddress(address);
+            //Sort by transaction created time
+            let transactionsForAddressSortedByDateTime =
+                transactionsForAddress.sort((firstTransaction, secondTransaction) => {
+                    return (new Date(firstTransaction.dateCreated).getTime() - new Date(secondTransaction.dateCreated).getTime());
+                });
+
+            response = transactionsForAddressSortedByDateTime;
+
+        } else {
+            response = { errorMsg: "Invalid address" }
+        }
+
+        return response;
+    }
 
 };
