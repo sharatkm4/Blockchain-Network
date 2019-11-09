@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var Node = require("./Node");
+var utils = require('./utils');
 var node = null;
 
 //Parse JSON Message Body in POST RESTFul Services.
@@ -189,13 +190,29 @@ app.post('/transactions/send', (req, res) => {
 
 
 var listeningPort = 5555;
+var listeningHost = "localhost";
+
+// commander library for getting port and host as command-line arguments.
+var commander = require('commander');
+commander
+    .usage('[OPTIONS]...')
+    .option('-lp, --listeningPort <Port Number>', 'Listening Port Number', listeningPort)
+    .option('-lh, --listeningHost <Host Name>', 'Listening Host Name', listeningHost)
+    .parse(process.argv);
+
+if (utils.isNumeric(commander.listeningPort))
+    listeningPort = commander.listeningPort;
+else
+    console.log(`Listening Port entered is not a number: Will use default ${listeningPort} port.`);
+
+listeningHost = commander.listeningHost;
 
 var server = app.listen(listeningPort, function () {
     var host = server.address().address
     var port = server.address().port
 
     if (host == "::") {
-        host = "localhost";
+        host = listeningHost;
     }
 
     node = new Node(host, port);
