@@ -4,6 +4,10 @@ var BlockChain = require('./BlockChain');
 
 var utils = require('./utils');
 
+var CryptoUtils = require('./CryptoUtils');
+
+var Transaction = require('./Transaction');
+
 //generate hash of (Datetime + random)
 function calculateNodeId() {
 
@@ -302,6 +306,156 @@ module.exports = class Node {
 
     }
 
+    // Send Transaction
+    // With this endpoint, you can broadcast a transaction to the network.
+    sendTransaction(inputTransactionJson) {
+
+        // Check for missing fields
+        if (!inputTransactionJson.hasOwnProperty("from")) {
+            return { errorMsg: "Invalid transaction: field 'from' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("to")) {
+            return { errorMsg: "Invalid transaction: field 'to' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("value")) {
+            return { errorMsg: "Invalid transaction: field 'value' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("fee")) {
+            return { errorMsg: "Invalid transaction: field 'fee' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("dateCreated")) {
+            return { errorMsg: "Invalid transaction: field 'dateCreated' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("data")) {
+            return { errorMsg: "Invalid transaction: field 'data' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("senderPubKey")) {
+            return { errorMsg: "Invalid transaction: field 'senderPubKey' is missing" };
+        }
+        if (!inputTransactionJson.hasOwnProperty("senderSignature")) {
+            return { errorMsg: "Invalid transaction: field 'senderSignature' is missing" };
+        }
+
+        // Check for invalid fields
+        if (typeof inputTransactionJson.from !== 'string') {
+            return { errorMsg: "Invalid transaction: field 'from' should be a string" };
+        }
+        if (typeof inputTransactionJson.to !== 'string') {
+            return { errorMsg: "Invalid transaction: field 'to' should be a string" };
+        }
+        if (!Number.isInteger(inputTransactionJson.value)) {
+            return { errorMsg: "Invalid transaction: field 'value' should be an integer" };
+        }
+        if (!Number.isInteger(inputTransactionJson.fee)) {
+            return { errorMsg: "Invalid transaction: field 'fee' should be an integer" };
+        }
+        if (typeof inputTransactionJson.dateCreated !== 'string') {
+            return { errorMsg: "Invalid transaction: field 'dateCreated' should be an ISO8601 date string" };
+        }
+        if (typeof inputTransactionJson.data !== 'string') {
+            return { errorMsg: "Invalid transaction: field 'data' should be a string" };
+        }
+        if (typeof inputTransactionJson.senderPubKey !== 'string') {
+            return { errorMsg: "Invalid transaction: field 'senderPubKey' should be a string" };
+        }
+        if (!Array.isArray(inputTransactionJson.senderSignature)) {
+            return { errorMsg: "Invalid transaction: field 'senderSignature' should be an array" };
+        }
+        if (inputTransactionJson.senderSignature.length !== 2) {
+            return { errorMsg: "Invalid transaction: array field 'senderSignature' should have have 2 elements" };
+        }
+        if (typeof inputTransactionJson.senderSignature[0] !== 'string') {
+            return { errorMsg: "Invalid transaction: first element of array field 'senderSignature' should be a string" };
+        }
+        if (typeof inputTransactionJson.senderSignature[1] !== 'string') {
+            return { errorMsg: "Invalid transaction: second element of array field 'senderSignature' should be a string" };
+        }
+
+        // Trim whitespaces from fields
+        inputTransactionJson.from = inputTransactionJson.from.trim();
+        inputTransactionJson.to = inputTransactionJson.to.trim();
+        inputTransactionJson.dateCreated = inputTransactionJson.dateCreated.trim();
+        inputTransactionJson.data = inputTransactionJson.data.trim();
+        inputTransactionJson.senderPubKey = inputTransactionJson.senderPubKey.trim();
+        inputTransactionJson.senderSignature[0] = inputTransactionJson.senderSignature[0].trim();
+        inputTransactionJson.senderSignature[1] = inputTransactionJson.senderSignature[1].trim();
+
+        // Convert Hex-valued strings to lower case
+        inputTransactionJson.from = inputTransactionJson.from.toLowerCase();
+        inputTransactionJson.to = inputTransactionJson.to.toLowerCase();
+        inputTransactionJson.senderPubKey = inputTransactionJson.senderPubKey.toLowerCase();
+        inputTransactionJson.senderSignature[0] = inputTransactionJson.senderSignature[0].toLowerCase();
+        inputTransactionJson.senderSignature[1] = inputTransactionJson.senderSignature[1].toLowerCase();
+
+        // Check for invalid field values
+        if (!utils.isValidAddress(inputTransactionJson.from)) {
+            return { errorMsg: "Invalid transaction: field 'from' should be a 40-Hex string" };
+        }
+        if (!utils.isValidAddress(inputTransactionJson.to)) {
+            return { errorMsg: "Invalid transaction: field 'to' should be a 40-Hex string" };
+        }
+        if (inputTransactionJson.value < 0) {
+            return { errorMsg: "Invalid transaction: field 'value' should be greater than or equal to 0" };
+        }
+        if (inputTransactionJson.fee < 10) {
+            return { errorMsg: "Invalid transaction: number field 'fee' should be greater than or equal to 10" };
+        }
+        if (!utils.isValid_ISO_8601_date(inputTransactionJson.dateCreated)) {
+            return { errorMsg: "Invalid transaction: field 'dateCreated' should be an ISO8601 date string" };
+        }
+        if (!utils.isValidPublicKey(inputTransactionJson.senderPubKey)) {
+            return { errorMsg: "Invalid transaction: field 'senderPubKey' should be a 65-Hex string" };
+        }
+        if (!utils.isValid_64_Hex_string(inputTransactionJson.senderSignature[0])) {
+            return { errorMsg: "Invalid transaction: first element of array field 'senderSignature' should be a 64-hex string value" };
+        }
+        if (!utils.isValid_64_Hex_string(inputTransactionJson.senderSignature[1])) {
+            return { errorMsg: "Invalid transaction: second element of array field 'senderSignature' should be a 64-hex string value" };
+        }
+        let publicAddress = CryptoUtils.getPublicAddressFromPublicKey(inputTransactionJson.senderPubKey);
+        if (inputTransactionJson.from !== publicAddress) {
+            return { errorMsg: "Invalid transaction: field 'senderPubKey' does not match the 'from' public address" };
+        }
+
+        let newTransaction = new Transaction(
+            inputTransactionJson.from, // address (40 hex digits)
+            inputTransactionJson.to, // address (40 hex digits)
+            inputTransactionJson.value, // integer (non negative)
+            inputTransactionJson.fee, // integer (non negative)
+            inputTransactionJson.dateCreated, // ISO8601_string
+            inputTransactionJson.data, // string (optional)
+            inputTransactionJson.senderPubKey, // hex_number[65]
+            inputTransactionJson.senderSignature); // hex_number[2][64]
+
+        //console.log('Transaction DataHash: ' + newTransaction.transactionDataHash);
+
+        // Check for duplicate transaction data hash
+        let transaction = this.getTransactionByHash(newTransaction.transactionDataHash);
+        if (!transaction || !transaction.hasOwnProperty("errorMsg")) {
+            return { errorMsg: `Invalid transaction: Transaction already exists with Transaction Data Hash: ${newTransaction.transactionDataHash}` };
+        }
+
+        // Validate senderSignature to confirm sender signed the Transaction
+        let validSignature = CryptoUtils.verifySignature(
+            newTransaction.transactionDataHash,
+            inputTransactionJson.senderPubKey,
+            { r: inputTransactionJson.senderSignature[0], s: inputTransactionJson.senderSignature[1]} );
+        if (!validSignature) {
+            return { errorMsg: "Invalid transaction: Invalid signature in the 'senderSignature' field" };
+        }
+
+        // Checks the sender account balance to be >= value + fee
+        let accountBalance = this.getBalanceForAddress(inputTransactionJson.from);
+        if (accountBalance.confirmedBalance < (inputTransactionJson.value + inputTransactionJson.fee)) {
+            return { errorMsg: "Invalid transaction: Sender does not have enough balance to send transaction !! " };
+        }
+
+        // Put the transaction in "pending transactions" pool
+        this.chain.pendingTransactions.push(newTransaction);
+
+        let response = { transactionDataHash: newTransaction.transactionDataHash };
+        return response;
+    }
 
 
 

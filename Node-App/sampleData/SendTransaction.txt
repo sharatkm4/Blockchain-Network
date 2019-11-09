@@ -1,0 +1,15 @@
+{
+  "from": "c3293572dbe6ebc60de4a20ed0e21446cae66b17",
+  "to": "f51362b7351ef62253a227a77751ad9b2302f911",
+  "value": 25000,
+  "fee": 10,
+  "dateCreated": "2018-02-10T17:53:48.972Z",
+  "data": "funds",
+  "senderPubKey": "c74a8458cd7a7e48f4b7ae6f4ae9f56c5c88c0f03e7c59cb4132b9d9d1600bba1",
+  "senderSignature": [
+    "33be705476889fbb647633a9272cf546401f22e87f0c2b2a6c58ff56b7aa368a",
+    "66722e9b58a05952a986ee2c90faa1cc828575503cfc393278006629f20bd78c"
+  ]
+}
+
+transactionDataHash: 6a3a7859c389bad17d79c5856e17a74daecfa6d67aab237132b5dc8849b5467e

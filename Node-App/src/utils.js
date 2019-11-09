@@ -9,6 +9,45 @@ function isValidAddress(value) {
     if (typeof value === 'string') {
         return /^[0-9a-f]{40}$/.test(value);
    }
+   return false;
+}
+
+// Verifies if the value is a valid 65-Hex string
+function isValidPublicKey(value) {
+    if (typeof value == 'string') {
+        return /^[0-9a-f]{65}$/.test(value);
+    }
+    return false;
+}
+
+// Verifies if the value is a valid 64-Hex string
+function isValid_64_Hex_string(value) {
+    if (typeof value === 'string') {
+        return /^[0-9a-f]{64}$/.test(value);
+    }
+
+    return false;
+}
+
+// Verifies if the value is a valid ISO8601 date string : YYYY-MM-DDTHH:MN:SS.MSSZ
+function isValid_ISO_8601_date(value) {
+    if (typeof value === 'string') {
+        if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(value)) {
+            return false;
+        }
+
+        let dateISO_String = null;
+        try {
+            let aDate = new Date(value);
+            dateISO_String = aDate.toISOString();
+        }
+        catch (error) {
+            return false;
+        }
+
+        return dateISO_String === value;
+    }
+
     return false;
 }
 
@@ -35,5 +74,8 @@ module.exports = {
     strMapToObj,
     objToStrMap,
     isNumeric,
-    isValidAddress
+    isValidAddress,
+    isValid_ISO_8601_date,
+    isValidPublicKey,
+    isValid_64_Hex_string
 }

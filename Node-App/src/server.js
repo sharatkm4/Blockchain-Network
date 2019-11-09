@@ -1,12 +1,15 @@
 var express = require('express');
-
 var app = express();
-
 var Node = require("./Node");
-
 var node = null;
 
+//Parse JSON Message Body in POST RESTFul Services.
+var bodyParser = require('body-parser');
+app.use(bodyParser.json())
+
 var HttpStatus = require('http-status-codes');
+var axios = require('axios');
+var restfulCallTimeout = 60000;
 
 // Home Page
 app.get('/', function (req, res) {
@@ -118,6 +121,71 @@ app.get('/address/:address/balance', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// Use axios library to make RESTFul calls
+async function sendTransactionToAllPeers(transaction) {
+    let peerNodeIds = Array.from(node.peers.keys());
+    let peerUrls = Array.from(node.peers.values());
+
+    let response = {
+        peersTransactionsSendSuccessfulResponses: [ ],
+        peersTransactionsSendErrorResponses: [ ],
+        peersDeleted: [ ]
+    };
+
+    for (let i = 0; i = peerUrls.length; i++) {
+        let peerUrl = peerUrls[i];
+        let restfulUrl = peerUrl + "/transactions/send";
+        let successResponse = undefined;
+        let errorResponse = undefined;
+        await axios.post(restfulUrl, transaction, {timeout: restfulCallTimeout})
+            .then(function (response) {
+                console.log('response = ', response);
+                successResponse = response;
+            })
+            .catch(function (error) {
+                console.log('error =', error);
+                errorResponse = error;
+            });
+
+        let theResponse = { };
+
+        // If the RESTFul call to the peer yielded no response after the timeout, then just delete the peer node from the list of "peers".
+        if (successResponse === undefined && errorResponse === undefined) {
+            node.peers.delete(peerNodeIds[i]);
+            response.peersDeleted.push(peerUrl);
+
+            theResponse.errorMsg = `Peer ${peerUrl} did not respond after timeout period from call to /transactions/send - deleted as peer`;
+            response.peersTransactionsSendErrorResponses.push(theResponse);
+        } else if (errorResponse !== undefined) {
+            theResponse.errorMsg = `Peer ${peerUrl} did not respond with success from call to /transactions/send`;
+            theResponse.error = errorResponse;
+            response.peersTransactionsSendErrorResponses.push(theResponse);
+        } else if (successResponse !== undefined) {
+            theResponse.message = `Peer ${peerUrl} did respond with success from call to /transactions/send`;
+            response.peersTransactionsSendSuccessfulResponses.push(theResponse);
+        }
+
+    }
+
+    //console.log('Response Object: ' + response);
+
+}
+
+// Send Transaction
+// With this endpoint, you can broadcast a transaction to the network.
+app.post('/transactions/send', (req, res) => {
+    //console.log('Node: ' + req.body);
+    let response = node.sendTransaction(req.body);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.BAD_REQUEST);
+    } else {
+        sendTransactionToAllPeers(req.body);
+        res.status(HttpStatus.CREATED);
+    }
+
+     res.end(JSON.stringify(response));
+});
 
 
 var listeningPort = 5555;
