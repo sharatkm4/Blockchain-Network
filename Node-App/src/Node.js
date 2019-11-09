@@ -8,6 +8,10 @@ var CryptoUtils = require('./CryptoUtils');
 
 var Transaction = require('./Transaction');
 
+var GenesisBlock = require('./GenesisBlock');
+
+var Block = require('./Block');
+
 //generate hash of (Datetime + random)
 function calculateNodeId() {
 
@@ -455,6 +459,153 @@ module.exports = class Node {
 
         let response = { transactionDataHash: newTransaction.transactionDataHash };
         return response;
+    }
+
+    // Get Mining Job Endpoint
+    // This endpoint will prepare a block candidate and the miner will calculate the nonce for it.
+    getMiningJob(minerAddress) {
+
+        /*this.chain.pendingTransactions.push({
+            "from": "0825b1b7d17ea1c1ff9ebe1c74d7c6d8a4a104dc",
+            "to": "1234567890abcdef1234567890abcdef12345678",
+            "value": 3000000,
+            "fee": 100,
+            "dateCreated": "2019-11-02T18:51:24.965Z", // after genesis block
+            "data": "genesis tx",
+            "senderPubKey": "00000000000000000000000000000000000000000000000000000000000000000",
+            "transactionDataHash": "123456789012345bd456790be94a0b56557a4f3ec6b05f06a19e74e73368c82b",
+            "senderSignature": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            ],
+            "minedInBlockIndex": null,
+            "transferSuccessful": false
+        });*/
+
+        minerAddress = minerAddress.trim();
+        minerAddress = minerAddress.toLowerCase();
+
+        if (!utils.isValidAddress(minerAddress)) {
+            return { errorMessage: "Invalid Miner Address: Miner Address should be a 40-Hex string" }
+        }
+
+        let pendingTransactionsConsideredForNextBlock = JSON.parse(JSON.stringify(this.chain.pendingTransactions));
+
+        // Sort transactions in descending order of fees
+        pendingTransactionsConsideredForNextBlock.sort(function(a, b) { return b.fee - a.fee });
+
+        let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+
+        let confirmedBalancesMap = this.chain.getConfirmedBalances();
+
+        let nextBlockIndex = this.chain.blocks.length;
+
+        // Block reward for the miner
+        let coinbaseTransactionValue = 5000000;
+
+        console.log('Pending Transaction Length: ' + pendingTransactionsConsideredForNextBlock.length);
+
+        // Executes all pending transactions and adds them in the block candidate
+        for (let i = 0; i < pendingTransactionsConsideredForNextBlock.length; i++) {
+            let pendingTransaction = pendingTransactionsConsideredForNextBlock[i];
+
+            if (!confirmedBalancesMap.has(pendingTransaction.from)) {
+                confirmedBalancesMap.set(pendingTransaction.from, 0);
+            }
+
+            if (!confirmedBalancesMap.has(pendingTransaction.to)) {
+                confirmedBalancesMap.set(pendingTransaction.to, 0);
+            }
+
+            // if "from" Public Address has enough fees and value, set transferSuccessful to true
+            // if "from" Public Address has enough fees and not value, set transferSuccessful to false
+            // if "from" Public Address has enough fees, remove it from pending transactions
+
+            if (confirmedBalancesMap.get(pendingTransaction.from) >= pendingTransaction.fee) {
+                pendingTransaction.minedInBlockIndex = nextBlockIndex;
+
+                // The "from" address in a Transaction always pays the fee.
+                let tempBalance = confirmedBalancesMap.get(pendingTransaction.from);
+                tempBalance -= pendingTransaction.fee;
+                confirmedBalancesMap.set(pendingTransaction.from, tempBalance);
+
+                // Add the "fee" to the Coinbase Transaction Value field.
+                coinbaseTransactionValue += pendingTransaction.fee;
+
+                if (confirmedBalancesMap.get(pendingTransaction.from) >= (pendingTransaction.fee + pendingTransaction.value)) {
+                    tempBalance = confirmedBalancesMap.get(pendingTransaction.from);
+                    tempBalance -= pendingTransaction.value;
+                    confirmedBalancesMap.set(pendingTransaction.from, tempBalance);
+
+                    tempBalance = confirmedBalancesMap.get(pendingTransaction.to);
+                    tempBalance += pendingTransaction.value;
+                    confirmedBalancesMap.set(pendingTransaction.to, tempBalance);
+
+                    pendingTransaction.transferSuccessful = true;
+                } else {
+                    pendingTransaction.transferSuccessful = false;
+                }
+
+                // At this point, we know that the Pending Transaction can be placed in the Next Block to be Mined.
+                pendingTransactionsToBePlacedInNextBlockForMiningMap.set(pendingTransaction.from, pendingTransaction);
+
+            } else  {
+                // if 'from' Address does not have enough fees, remove it from the pending transaction list
+                this.chain.pendingTransactions = this.chain.pendingTransactions.filter(aTransaction =>
+                    aTransaction.transactionDataHash != pendingTransaction.transactionDataHash);
+            }
+
+        }
+
+        // Create coinbase Transaction
+        let coinbaseTransaction = new Transaction(
+            GenesisBlock.genesisFromAddress, // from: address (40 hex digits) string
+            minerAddress, // to: address (40 hex digits) string
+            coinbaseTransactionValue, // value: integer (non negative)
+            0, // fee: integer (non negative)
+            GenesisBlock.genesisDateCreated, // ISO8601_string
+            "coinbase tx", // data: string (optional)
+            GenesisBlock.genesisSenderPubKey, // senderPubKey: hex_number[65] string
+            // senderSignature: hex_number[2][64] : 2-element array of (64 hex digit) strings
+            [GenesisBlock.genesisSenderSignature, GenesisBlock.genesisSenderSignature],
+            nextBlockIndex, // minedInBlockIndex: integer / null
+            true); // transferSuccessful: boolean
+
+
+        // Add the Coinbase transaction first and then the remaining transactions
+        let transactionsToBePlacedInNextBlockForMining = [ coinbaseTransaction ];
+        transactionsToBePlacedInNextBlockForMining.push.apply(
+            transactionsToBePlacedInNextBlockForMining,
+            Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+
+        // console.log('nextBlockIndex = ', nextBlockIndex);
+        // console.log('this.chain.blocks =', this.chain.blocks);
+
+        // Create the next Block to be Mined.
+        let blockToBeMined = new Block(
+            nextBlockIndex, // Index: integer (unsigned)
+            transactionsToBePlacedInNextBlockForMining, // Transactions : Transaction[]
+            this.chain.currentDifficulty, // Difficulty: integer (unsigned)
+            this.chain.blocks[nextBlockIndex - 1].blockHash, // PrevBlockHash: hex_number[64] string
+            minerAddress); // MinedBy: address (40 hex digits) string
+
+        // Populate the mining job
+        this.chain.miningJobs.set(blockToBeMined.blockDataHash, blockToBeMined);
+
+        // console.log('blockToBeMined.transactions =', blockToBeMined.transactions);
+        // console.log('this.chain.miningJobs =', this.chain.miningJobs);
+
+        let response = {
+            'index': blockToBeMined.index,
+            'transactionsIncluded': blockToBeMined.transactions.length,
+            'difficulty': blockToBeMined.difficulty,
+            'expectedReward': blockToBeMined.transactions[0].value,
+            'rewardAddress': blockToBeMined.transactions[0].to,
+            'blockDataHash': blockToBeMined.blockDataHash
+        };
+
+        return response;
+
     }
 
 

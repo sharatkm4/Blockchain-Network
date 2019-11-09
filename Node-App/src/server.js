@@ -188,6 +188,19 @@ app.post('/transactions/send', (req, res) => {
      res.end(JSON.stringify(response));
 });
 
+// Get Mining Job Endpoint
+// This endpoint will prepare a block candidate and the miner will calculate the nonce for it.
+app.get('/mining/get-mining-job/:minerAddress', (req, res) => {
+    let minerAddress = req.params.minerAddress;
+    let response = node.getMiningJob(minerAddress);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.BAD_REQUEST);
+    }
+
+    res.end(JSON.stringify(response));
+});
+
 
 var listeningPort = 5555;
 var listeningHost = "localhost";

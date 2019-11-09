@@ -50,5 +50,9 @@ const genesisBlock = new Block(
     genesisDateCreated);
 
 module.exports = {
-    genesisBlock
+    genesisBlock,
+    genesisFromAddress,
+    genesisSenderPubKey,
+    genesisDateCreated,
+    genesisSenderSignature
 };

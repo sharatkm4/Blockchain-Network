@@ -1,4 +1,4 @@
-var cryptoJS = require('crypto-js');
+var CryptoJS = require('crypto-js');
 
 module.exports = class Block {
 
@@ -28,13 +28,52 @@ module.exports = class Block {
         }
     }
 
-    //TODO
+    // Calculating the Block Data Hash
+    // SHA256 hashing of the JSON representation of the following fields
+    // 'index'
+    // 'transactions'
+    // 'difficulty'
+    // 'prevBlockHash'
+    // 'minedBy'
     calculateBlockDataHash() {
-        return "TestDataHash";
+        let transactionsListJson = [];
+        for (let i = 0; i < this.transactions.length; i++) {
+            let transactionJson = this.transactions[i];
+            let transactionDataToAddJson = {
+                'from': transactionJson.from,
+                'to': transactionJson.to,
+                'value': transactionJson.value,
+                'fee': transactionJson.fee,
+                'dateCreated': transactionJson.dateCreated,
+                'transactionDataHash': transactionJson.transactionDataHash,
+                'senderSignature': transactionJson.senderSignature,
+                'minedInBlockIndex': transactionJson.minedInBlockIndex,
+                'transferSuccessful': transactionJson.transferSuccessful
+            };
+
+            transactionsListJson.push(transactionDataToAddJson)
+        }
+
+        let blockDataToHashJson = {
+            'index': this.index,
+            'transactions': transactionsListJson,
+            'difficulty': this.difficulty,
+            'prevBlockHash': this.prevBlockHash,
+            'minedBy': this.minedBy
+        }
+
+        let blockDataToHashJsonStr = JSON.stringify(blockDataToHashJson);
+        let blockDataHash = CryptoJS.SHA256(blockDataToHashJsonStr);
+        let blockDataHashStr = blockDataHash.toString();
+
+        return blockDataHashStr;
     }
 
-    //TODO
+    // Calculate the block hash
     calculateBlockHash() {
-        return "TestBlockHash";
+        let blockHashDataToHashString = `${this.blockDataHash}|${this.nonce}|${this.dateCreated}`;
+        let blockHash = CryptoJS.SHA256(blockHashDataToHashString);
+        let blockHashStr = blockHash.toString();
+        return blockHashStr;
     }
 }
