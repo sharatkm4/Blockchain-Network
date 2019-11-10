@@ -717,6 +717,80 @@ module.exports = class Node {
 
     }
 
+    // Debug: Mine a Block Endpoint
+    // With this endpoint you can mine with the difficulty that you want. Use it only for debugging purposes.
+    // Executes the entire mining process: get mining job -> calculate valid proof of work hash -> submit the mined job
+    debugMineBlock(minerAddress, difficulty){
+
+        // Check for invalid fields
+        if (!utils.isValidAddress(minerAddress)) {
+            return { errorMsg: "Invalid debug mine block: 'minerAddress' should be a 40-Hex string" };
+        }
+        if (!utils.isNumeric(difficulty)) {
+            return { errorMsg: "Invalid debug mine block: 'difficulty' should be a positive number" };
+        }
+
+        // Step 1: get mining job
+        let currentDifficulty = this.chain.currentDifficulty;
+        this.chain.currentDifficulty = parseInt(difficulty); // Only for debugging
+        let getMiningJobResponse = this.getMiningJob(minerAddress);
+        // Replace difficulty with original after retrieving the job
+        this.chain.currentDifficulty = currentDifficulty;
+        if (getMiningJobResponse.hasOwnProperty("errorMsg")) {
+            return getMiningJobResponse;
+        }
+
+        // Block to be Mined
+        let blockToBeMined = this.chain.miningJobs.get(getMiningJobResponse.blockDataHash);
+        if (!blockToBeMined) {
+            return { errorMsg: "Block not found in chain's mining job" }
+        }
+
+        // Step 2: calculate valid proof of work hash
+        // Keep finding the hash such that it matches the difficulty level (leading zeros)
+        blockToBeMined.dateCreated = new Date().toISOString();
+        blockToBeMined.nonce = 0;
+        let leadingZeros = ''.padStart(blockToBeMined.difficulty, '0');
+        while (true) {
+            blockToBeMined.blockHash = blockToBeMined.calculateBlockHash();
+            if (blockToBeMined.blockHash.startsWith(leadingZeros)) {
+                break;
+            }
+            blockToBeMined.nonce++;
+        }
+
+        console.log('Calculated POW hash: ' + blockToBeMined.blockHash);
+
+        // Step 3: submit the mined job
+        let submitMinedBlockInput = {
+            blockDataHash: blockToBeMined.blockDataHash,
+            dateCreated: blockToBeMined.dateCreated,
+            nonce: blockToBeMined.nonce,
+            blockHash: blockToBeMined.blockHash
+        }
+
+        let submitMinedBlockResponse = this.submitMinedBlock(submitMinedBlockInput);
+        if (submitMinedBlockResponse.hasOwnProperty("errorMsg")) {
+            return submitMinedBlockResponse;
+        }
+
+        let submittedMinedBlock = this.chain.blocks[this.chain.blocks.length - 1];
+        if (submittedMinedBlock.blockHash !== blockToBeMined.blockHash) {
+            return { errorMsg: "submittedMinedBlock's blockhash does not match" }
+        }
+
+        let response = {
+            index: submittedMinedBlock.index,
+            transactions: submittedMinedBlock.transactions,
+            difficulty: submittedMinedBlock.difficulty,
+            minedBy: submittedMinedBlock.minedBy,
+            dateCreated: submittedMinedBlock.dateCreated
+        };
+
+        return response;
+
+    }
+
 
 
 };

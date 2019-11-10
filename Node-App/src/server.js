@@ -272,6 +272,20 @@ app.post('/mining/submit-mined-block', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// Debug: Mine a Block Endpoint
+// With this endpoint you can mine with the difficulty that you want. Use it only for debugging purposes.
+app.get('/debug/mine/:minerAddress/:difficulty', (req, res) => {
+    let minerAddress = req.params.minerAddress;
+    let difficulty = req.params.difficulty;
+    let response = node.debugMineBlock(minerAddress, difficulty);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        res.status(HttpStatus.BAD_REQUEST);
+    }
+
+    res.end(JSON.stringify(response));
+});
+
 var listeningPort = 5555;
 var listeningHost = "localhost";
 
