@@ -486,7 +486,7 @@ module.exports = class Node {
         minerAddress = minerAddress.toLowerCase();
 
         if (!utils.isValidAddress(minerAddress)) {
-            return { errorMessage: "Invalid Miner Address: Miner Address should be a 40-Hex string" }
+            return { errorMsg: "Invalid Miner Address: Miner Address should be a 40-Hex string" }
         }
 
         let pendingTransactionsConsideredForNextBlock = JSON.parse(JSON.stringify(this.chain.pendingTransactions));

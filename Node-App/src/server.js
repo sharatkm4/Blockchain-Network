@@ -10,7 +10,7 @@ app.use(bodyParser.json())
 
 var HttpStatus = require('http-status-codes');
 var axios = require('axios');
-var restfulCallTimeout = 60000;
+var restfulCallTimeout = 60000; //60 seconds
 
 // Home Page
 app.get('/', function (req, res) {
@@ -316,3 +316,5 @@ var server = app.listen(listeningPort, function () {
 
     console.log("Node Server listening at http://%s:%s", host, port);
 });
+
+// node src/server.js --listeningPort 5555 --listeningHost localhost
