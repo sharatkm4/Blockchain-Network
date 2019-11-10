@@ -201,6 +201,76 @@ app.get('/mining/get-mining-job/:minerAddress', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+async function notifyPeersWithNewMinedBlock() {
+
+    let peerNodeIds = Array.from(node.peers.keys());
+    let peerUrls = Array.from(node.peers.values());
+
+    let notificationMessageContents = {
+        blocksCount: node.chain.blocks.length,
+        cumulativeDifficulty: node.chain.calculateCumulativeDifficulty(),
+        nodeUrl: node.selfUrl
+    }
+
+    let response = {
+        peersNotifyNewBlockSuccessfulResponses: [ ],
+        peersNotifyNewBlockErrorResponses: [ ],
+        peersDeleted: [ ]
+    };
+
+    for (let i = 0; i < peerUrls.length; i++) {
+        let peerUrl = peerUrls[i];
+        let restfulUrl = peerUrl + "/peers/notify-new-block";
+        let normalResponse = undefined;
+        let errorResponse = undefined;
+        await axios.post(restfulUrl, notificationMessageContents, { timeout: restfulCallTimeout })
+            .then(function (response) {
+                normalResponse = response.data;
+            })
+            .catch(function (error) {
+                errorResponse = error;
+            });
+
+        // Should always get a normal response in this context.
+        // If the RESTFul call to the peer yielded no response after the timeout, then just delete the peer node from the list of "peers".
+        let theResponse = { };
+        if (normalResponse === undefined) {
+            node.peers.delete(peerNodeIds[i]);
+            response.peersDeleted.push(peerUrl);
+
+            if (errorResponse === undefined) {
+                theResponse.errorMsg = `Peer ${peerUrl} did not respond after timeout period from call to /peers/notify-new-block - deleted as peer`;
+            } else {
+                theResponse.errorMsg = `Peer ${peerUrl} did not respond with Success from call to /peers/notify-new-block - deleted as peer`;
+                theResponse.error = errorResponse;
+            }
+
+            response.peersNotifyNewBlockErrorResponses.push(theResponse);
+        } else {
+            theResponse.message = `Sucessfully sent /peers/notify-new-block to peer ${peerUrl}`;
+            response.peersNotifyNewBlockSuccessfulResponses.push(theResponse);
+        }
+    }
+}
+
+// Submit Block Endpoint
+// With this endpoint you will submit a mined block.
+app.post('/mining/submit-mined-block', (req, res) => {
+    let response = node.submitMinedBlock(req.body);
+
+    if (response.hasOwnProperty("errorMsg")) {
+        if (response.errorMsg.startsWith("Invalid Mined Block: ")) {
+            res.status(HttpStatus.BAD_REQUEST);
+        } else {
+            res.status(HttpStatus.NOT_FOUND);
+        }
+    } else {
+        // Peers are notified about the new mined block after it is successfully added to the chain
+        notifyPeersWithNewMinedBlock();
+    }
+
+    res.end(JSON.stringify(response));
+});
 
 var listeningPort = 5555;
 var listeningHost = "localhost";

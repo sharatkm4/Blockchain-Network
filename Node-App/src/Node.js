@@ -533,10 +533,12 @@ module.exports = class Node {
                 coinbaseTransactionValue += pendingTransaction.fee;
 
                 if (confirmedBalancesMap.get(pendingTransaction.from) >= (pendingTransaction.fee + pendingTransaction.value)) {
+                    // Debit value from 'From' address
                     tempBalance = confirmedBalancesMap.get(pendingTransaction.from);
                     tempBalance -= pendingTransaction.value;
                     confirmedBalancesMap.set(pendingTransaction.from, tempBalance);
 
+                    // Credit value to 'To' address
                     tempBalance = confirmedBalancesMap.get(pendingTransaction.to);
                     tempBalance += pendingTransaction.value;
                     confirmedBalancesMap.set(pendingTransaction.to, tempBalance);
@@ -602,6 +604,113 @@ module.exports = class Node {
             'expectedReward': blockToBeMined.transactions[0].value,
             'rewardAddress': blockToBeMined.transactions[0].to,
             'blockDataHash': blockToBeMined.blockDataHash
+        };
+
+        return response;
+
+    }
+
+    // Submit Block Endpoint
+    // With this endpoint you will submit a mined block.
+    submitMinedBlock(inputMinedBlockJson) {
+
+        // Check for missing fields
+        if (!inputMinedBlockJson.hasOwnProperty("blockDataHash")) {
+            return { errorMsg: "Invalid Mined Block: field 'blockDataHash' is missing" };
+        }
+        if (!inputMinedBlockJson.hasOwnProperty("dateCreated")) {
+            return { errorMsg: "Invalid Mined Block: field 'dateCreated' is missing" };
+        }
+        if (!inputMinedBlockJson.hasOwnProperty("nonce")) {
+            return { errorMsg: "Invalid Mined Block: field 'nonce' is missing" };
+        }
+        if (!inputMinedBlockJson.hasOwnProperty("blockHash")) {
+            return { errorMsg: "Invalid Mined Block: field 'blockHash' is missing" };
+        }
+
+        // Check for invalid fields
+        if (typeof inputMinedBlockJson.blockDataHash !== 'string') {
+            return { errorMsg: "Invalid Mined Block: field 'blockDataHash' should be a 64-Hex string" };
+        }
+        if (typeof inputMinedBlockJson.dateCreated !== 'string') {
+            return { errorMsg: "Invalid Mined Block: field 'dateCreated' should be a ISO8601 date string format" };
+        }
+        if (!Number.isInteger(inputMinedBlockJson.nonce)) {
+            return { errorMsg: "Invalid Mined Block: field 'nonce' should be an integer" };
+        }
+        if (typeof inputMinedBlockJson.blockHash !== 'string') {
+            return { errorMsg: "Invalid Mined Block: field 'blockHash' should be a 64-Hex string" };
+        }
+
+        // Trim whitespaces from fields
+        inputMinedBlockJson.blockDataHash = inputMinedBlockJson.blockDataHash.trim();
+        inputMinedBlockJson.dateCreated = inputMinedBlockJson.dateCreated.trim();
+        inputMinedBlockJson.blockHash = inputMinedBlockJson.blockHash.trim();
+
+        // Convert Hex-valued strings to lower case
+        inputMinedBlockJson.blockDataHash = inputMinedBlockJson.blockDataHash.toLowerCase();
+        inputMinedBlockJson.blockHash = inputMinedBlockJson.blockHash.toLowerCase();
+
+        // Check for invalid field values
+        if (!utils.isValid_64_Hex_string(inputMinedBlockJson.blockDataHash)) {
+            return { errorMsg: "Invalid Mined Block: field 'blockDataHash' should be a 64-Hex string" };
+        }
+        if (!utils.isValid_64_Hex_string(inputMinedBlockJson.blockHash)) {
+            return { errorMsg: "Invalid Mined Block: field 'blockHash' should be a 64-Hex string" };
+        }
+        if (!utils.isValid_ISO_8601_date(inputMinedBlockJson.dateCreated)) {
+            return { errorMsg: "Invalid Mined Block: field 'dateCreated' should be an ISO8601 date string format " };
+        }
+        if (inputMinedBlockJson.nonce < 0) {
+            return { errorMsg: "Invalid Mined Block: field 'nonce' should be greater than or equal to 0" };
+        }
+
+        // Check if the Block has already been mined from the miningJob
+        if (!this.chain.miningJobs.has(inputMinedBlockJson.blockDataHash)) {
+            return { errorMsg: "Block not found or already mined" }
+        }
+
+        let potentialNewBlockCandidate = this.chain.miningJobs.get(inputMinedBlockJson.blockDataHash);
+
+        potentialNewBlockCandidate.nonce = inputMinedBlockJson.nonce;
+        potentialNewBlockCandidate.dateCreated = inputMinedBlockJson.dateCreated;
+        potentialNewBlockCandidate.blockHash = potentialNewBlockCandidate.calculateBlockHash();
+
+        // Verify that the blockHash from request matches with the newly calculated block hash.
+        if (potentialNewBlockCandidate.blockHash !== inputMinedBlockJson.blockHash) {
+            return { errorMsg: "Invalid Mined Block: Incorrect 'blockHash' field value provided" }
+        }
+
+        // Verify if the difficulty is met (if the submitted blockhash has correct leading zeros)
+        let leadingZeros = ''.padStart(potentialNewBlockCandidate.difficulty, '0');
+        if (!inputMinedBlockJson.blockHash.startsWith(leadingZeros)) {
+            return { errorMsg: "Invalid Mined Block: 'blockHash' field value provided does not match the Block difficulty" }
+        }
+
+        // Verify if the minedBlock's prevBlockHash from request matches with the chain's prevBlockHash
+        let previousBlock = this.chain.blocks[this.chain.blocks.length -1];
+        console.log('# of blocks before adding: ' + this.chain.blocks.length);
+        if (potentialNewBlockCandidate.prevBlockHash !== previousBlock.blockHash) {
+            return { errorMsg: "Invalid Mined Block: Previous Block Hash value does not match in the chain" }
+        }
+
+        // The new mined block is added to the chain
+        this.chain.blocks.push(potentialNewBlockCandidate);
+
+        // Once the block is mined, all pending mining jobs are deleted for this block
+        this.chain.miningJobs.clear();
+
+        // Remove all the transactions in the newly added block from chain's pendingTransactions list.
+        for (let i = 0; i < potentialNewBlockCandidate.transactions.length; i++) {
+            let transactionToRemove = potentialNewBlockCandidate.transactions[i];
+            this.chain.pendingTransactions = this.chain.pendingTransactions.filter(transaction =>
+                transaction.transactionDataHash !== transactionToRemove.transactionDataHash);
+        }
+
+        // TODO change block difficulty level dynamically
+
+        let response = {
+            message: `Block accepted, reward paid: ${potentialNewBlockCandidate.transactions[0].value} microcoins`
         };
 
         return response;
