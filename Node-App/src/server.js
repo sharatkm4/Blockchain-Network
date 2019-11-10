@@ -297,6 +297,8 @@ commander
     .option('-lh, --listeningHost <Host Name>', 'Listening Host Name', listeningHost)
     .parse(process.argv);
 
+// node src/server.js --listeningPort 5555 --listeningHost localhost
+
 if (utils.isNumeric(commander.listeningPort))
     listeningPort = commander.listeningPort;
 else
@@ -316,5 +318,3 @@ var server = app.listen(listeningPort, function () {
 
     console.log("Node Server listening at http://%s:%s", host, port);
 });
-
-// node src/server.js --listeningPort 5555 --listeningHost localhost
