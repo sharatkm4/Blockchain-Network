@@ -12,6 +12,12 @@ var GenesisBlock = require('./GenesisBlock');
 
 var Block = require('./Block');
 
+var axios = require('axios');
+
+var restfulCallTimeout = 60000; // 60 seconds
+var confictErrorType = "Conflict";
+var badRequestErrorType = "Bad Request";
+
 //generate hash of (Datetime + random)
 function calculateNodeId() {
 
@@ -34,7 +40,7 @@ function calculateNodeId() {
 module.exports = class Node {
 
     constructor(hostName, port) {
-        this.name = "SM_Node_1_" + hostName + "_" + port;
+        this.name = "SM_Node_" + hostName + "_" + port;
         this.nodeId = calculateNodeId();
         this.peers = new Map(); // map(nodeId --> URL)
         this.selfUrl = `http://${hostName}:${port}`;
@@ -791,6 +797,151 @@ module.exports = class Node {
 
     }
 
+    // List All Peers Endpoint
+    // This endpoint will return all the peers of the node.
+    listAllPeers() {
+        let response = utils.strMapToObj(this.peers);
+        return response;
+    }
+
+    // Connect a Peer Endpoint
+    // With this endpoint, you can manually connect to other nodes.
+    async connectToPeer(inputJson) {
+
+        //console.log(inputJson);
+
+        // Check for missing fields
+        if (!inputJson.hasOwnProperty("peerUrl")) {
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: "Field 'peerUrl' is missing"
+            }
+        }
+
+        // Check for valid fields
+        if (typeof inputJson.peerUrl !== 'string') {
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: "Field 'peerUrl' should be a valid URL"
+            }
+        }
+
+        // Trim the value
+        inputJson.peerUrl = inputJson.peerUrl.trim();
+
+        // Check for valid field values
+        if (!inputJson.peerUrl.length > 0) {
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: "Field 'peerUrl' should be a valid URL"
+            }
+        }
+
+        // To avoid double connecting to the same peer
+        //   -> First get /info and check the nodeId
+        //   -> Never connect twice to the same nodeId
+        let restfulUrl = inputJson.peerUrl + "/info";
+        let getNodeInfoSuccessResponse = undefined;
+        await axios.get(restfulUrl, {timeout: restfulCallTimeout})
+            .then(function (response) {
+                //console.log('getNodeInfo.response.status: ', response.status);
+                //console.log('getNodeInfo.response.data: ', response.data);
+                getNodeInfoSuccessResponse = response.data;
+            })
+            .catch(function (error) {
+                console.log('getNodeInfo.error.response.status: ', error.response.status);
+                console.log('getNodeInfo.error.response.data: ', error.response.data);
+            });
+
+        if (getNodeInfoSuccessResponse === undefined) {
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: `Unable to connect to peer ${inputJson.peerUrl}`
+            }
+        }
+
+        // If a node is already connected to given peer, return "409 Conflict"
+        if (this.peers.has(getNodeInfoSuccessResponse.nodeId)) {
+            return {
+                errorType: confictErrorType,
+                errorMsg: `Already connected to peer: ${inputJson.peerUrl}`
+            }
+        }
+
+        // Never connect to the same nodeId
+        if (this.nodeId == getNodeInfoSuccessResponse.nodeId) {
+            return {
+                errorType: confictErrorType,
+                errorMsg: `Cannot connect to the same Node ID`
+            }
+        }
+
+        // If the chain ID does not match, don't connect, return "400 Bad Request"
+        if (this.chainId !== getNodeInfoSuccessResponse.chainId) {
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: `chainId ${getNodeInfoSuccessResponse.chainId} of peer ${inputJson.peerUrl} does not match with the chainId ${this.chainId} of this node`
+            }
+        }
+
+        // validations are complete and peer can be added
+        // For example, Alice is connected to Bob now
+        this.peers.set(getNodeInfoSuccessResponse.nodeId, inputJson.peerUrl);
+        console.log();
+        console.log('this.peers: ', this.peers);
+        console.log();
+
+
+        // Ensure bi-directional connections
+        // When Alice is connected to Bob, try to connect Bob to Alice
+        // For example, Bob needs to connect to Alice now
+        restfulUrl = inputJson.peerUrl + "/peers/connect";
+        let postJsonInput = { peerUrl: this.selfUrl };
+        let peersConnectSuccessResponse = undefined;
+        let peersConnectErrorResponse = undefined;
+        await axios.post(restfulUrl, postJsonInput, {timeout: restfulCallTimeout})
+            .then(function (response) {
+                //console.log('peersConnect.response.status: ', response.status);
+                //console.log('peersConnect.response.data: ', response.data);
+                peersConnectSuccessResponse = response.data;
+            })
+            .catch(function (error) {
+                console.log('peersConnect.error.response.status: ', error.response.status);
+                console.log('peersConnect.error.response.data: ', error.response.data);
+                peersConnectErrorResponse = error;
+            });
+
+        if (peersConnectSuccessResponse === undefined && peersConnectErrorResponse === undefined) {
+            this.peers.delete(getNodeInfoSuccessResponse.nodeId);
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: `Bi-directional connection with ${inputJson.peerUrl} peer failed due to timeout`
+            }
+        }
+
+        let response = {
+            message: `Connected to peer: ${inputJson.peerUrl}`
+        }
+
+        return response;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    }
 
 
 };

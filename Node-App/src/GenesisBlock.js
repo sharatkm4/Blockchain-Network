@@ -8,8 +8,9 @@ const genesisSenderPubKey = "000000000000000000000000000000000000000000000000000
 //64 hex digit
 const genesisSenderSignature = "0000000000000000000000000000000000000000000000000000000000000000";
 
-//ISO8601 date format
-const genesisDateCreated = new Date().toISOString();
+//ISO8601 date format (hardcoding the date)
+//const genesisDateCreated = new Date().toISOString();
+const genesisDateCreated = "2019-11-02T14:35:55.867Z";
 
 // 1 coin = 1,000 milli coins = 1,000,000 micro coins
 const totalSupplyOfCoins = 1000000000; // 1000 coins (1000 * 1,000,000 micro coins)

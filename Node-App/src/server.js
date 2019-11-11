@@ -286,6 +286,34 @@ app.get('/debug/mine/:minerAddress/:difficulty', (req, res) => {
     res.end(JSON.stringify(response));
 });
 
+// List All Peers Endpoint
+// This endpoint will return all the peers of the node.
+app.get('/peers', (req, res) => {
+    let response = node.listAllPeers();
+    res.end(JSON.stringify(response));
+});
+
+// Connect a Peer Endpoint
+// With this endpoint, you can manually connect to other nodes.
+app.post('/peers/connect', (req, res) => {
+
+    // make a asynchronous call to connecToPeer method and get response
+    // This method takes time as there will be RESTFul calls made to other nodes
+    node.connectToPeer(req.body).then( function(response) {
+        if (response.hasOwnProperty("errorMsg")) {
+            if (response.errorType === "Bad Request")
+                res.status(HttpStatus.BAD_REQUEST);
+            else if (response.errorType === "Conflict")
+                res.status(HttpStatus.CONFLICT);
+            response = { errorMsg: response.errorMsg }
+        }
+
+        // console.log('node.connectToPeer response =', response);
+        res.end(JSON.stringify(response));
+    });
+
+});
+
 var listeningPort = 5555;
 var listeningHost = "localhost";
 
