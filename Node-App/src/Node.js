@@ -1036,6 +1036,7 @@ module.exports = class Node {
 
         // Validate the downloaded peer chain (blocks, transactions, etc.)
         let validationResponse = this.validateDownloadedPeerChain(peerInfo.cumulativeDifficulty, getPeersBlocksSuccessResponse);
+        console.log('validateDownloadedPeerChain status: ', validationResponse)
         if (validationResponse.hasOwnProperty("errorMsg")) {
             return validationResponse;
         }
@@ -1126,7 +1127,13 @@ module.exports = class Node {
 
 
         // Validate each block from the first to the last
-        for (let i = 1; i < peerBlocksToValidate.length; i++) {
+        for (let i = 0; i < peerBlocksToValidate.length; i++) {
+
+            // skip the genesis block since its already validated above
+            if (i === 0) {
+                continue;
+            }
+
             let blockToValidate = peerBlocksToValidate[i];
 
             // Validate that all block fields are present and have valid values
@@ -1293,12 +1300,14 @@ module.exports = class Node {
                 };
             }
 
-
+            // Validate the transactions in the block
+            let reCalculatedTransactions = this.validateTransactionsInBlock2(blockToValidate, confirmedAccountBalances);
 
             // Re-calculate the blockDataHash and blockHash
             let blockToValidateCopy = new Block(
                 blockToValidate.index, // Index: integer (unsigned)
-                blockToValidate.transactions, // Transactions : Transaction[]
+               ///blockToValidate.transactions, // Transactions : Transaction[]
+                reCalculatedTransactions, // Transactions : Transaction[]
                 blockToValidate.difficulty, // Difficulty: integer (unsigned)
                 blockToValidate.prevBlockHash, // PrevBlockHash: hex_number[64] string
                 blockToValidate.minedBy, // MinedBy: address (40 hex digits) string
@@ -1352,13 +1361,13 @@ module.exports = class Node {
             reCalculatedCumulativeDifficulty += 16 ** blockToValidate.difficulty;
 
             // Validate the transactions in the block
-            let validateTransactionsResponse = this.validateTransactionsInBlock(blockToValidate, previousTransactionDataHashes, confirmedAccountBalances);
+            /*let validateTransactionsResponse = this.validateTransactionsInBlock(blockToValidate, previousTransactionDataHashes, confirmedAccountBalances);
             if (validateTransactionsResponse.hasOwnProperty("errorMsg")) {
                 return {
                     errorMsg: validateTransactionsResponse,
                     errorType: badRequestErrorType
                 }
-            }
+            }*/
         } // End of for loop
 
         // Let's check to see that the "peerCumulativeDifficulty" was calculated correctly by the Peer. It should equal the
@@ -1380,6 +1389,225 @@ module.exports = class Node {
 
         let response = { message: "successful validation" }
         return response;
+    }
+
+
+    validateTransactionsInBlock2(blockToValidate, confirmedBalancesMap) {
+
+        // Validate that the block has at least one transaction.
+        if (blockToValidate.transactions.length === 0) {
+            return { errorMsg: `Peer Block ${blockToValidate.index} has no Transactions - there should be at least one Transaction` };
+        }
+
+        // Block reward for the miner
+        let coinbaseTransactionValue = 5000000;
+
+        let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+
+        // Go through each Transaction and validate it.
+        for (let i = 0; i < blockToValidate.transactions.length; i++) {
+
+            // skip the coinbase transaction
+            if (i === 0) {
+                continue;
+            }
+
+            let inputTransactionJson = blockToValidate.transactions[i];
+
+            // Check for missing fields
+            if (!inputTransactionJson.hasOwnProperty("from")) {
+                return { errorMsg: "Invalid transaction: field 'from' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("to")) {
+                return { errorMsg: "Invalid transaction: field 'to' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("value")) {
+                return { errorMsg: "Invalid transaction: field 'value' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("fee")) {
+                return { errorMsg: "Invalid transaction: field 'fee' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("dateCreated")) {
+                return { errorMsg: "Invalid transaction: field 'dateCreated' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("data")) {
+                return { errorMsg: "Invalid transaction: field 'data' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("senderPubKey")) {
+                return { errorMsg: "Invalid transaction: field 'senderPubKey' is missing" };
+            }
+            if (!inputTransactionJson.hasOwnProperty("senderSignature")) {
+                return { errorMsg: "Invalid transaction: field 'senderSignature' is missing" };
+            }
+
+            // Check for invalid fields
+            if (typeof inputTransactionJson.from !== 'string') {
+                return { errorMsg: "Invalid transaction: field 'from' should be a string" };
+            }
+            if (typeof inputTransactionJson.to !== 'string') {
+                return { errorMsg: "Invalid transaction: field 'to' should be a string" };
+            }
+            if (!Number.isInteger(inputTransactionJson.value)) {
+                return { errorMsg: "Invalid transaction: field 'value' should be an integer" };
+            }
+            if (!Number.isInteger(inputTransactionJson.fee)) {
+                return { errorMsg: "Invalid transaction: field 'fee' should be an integer" };
+            }
+            if (typeof inputTransactionJson.dateCreated !== 'string') {
+                return { errorMsg: "Invalid transaction: field 'dateCreated' should be an ISO8601 date string" };
+            }
+            if (typeof inputTransactionJson.data !== 'string') {
+                return { errorMsg: "Invalid transaction: field 'data' should be a string" };
+            }
+            if (typeof inputTransactionJson.senderPubKey !== 'string') {
+                return { errorMsg: "Invalid transaction: field 'senderPubKey' should be a string" };
+            }
+            if (!Array.isArray(inputTransactionJson.senderSignature)) {
+                return { errorMsg: "Invalid transaction: field 'senderSignature' should be an array" };
+            }
+            if (inputTransactionJson.senderSignature.length !== 2) {
+                return { errorMsg: "Invalid transaction: array field 'senderSignature' should have have 2 elements" };
+            }
+            if (typeof inputTransactionJson.senderSignature[0] !== 'string') {
+                return { errorMsg: "Invalid transaction: first element of array field 'senderSignature' should be a string" };
+            }
+            if (typeof inputTransactionJson.senderSignature[1] !== 'string') {
+                return { errorMsg: "Invalid transaction: second element of array field 'senderSignature' should be a string" };
+            }
+
+            // Trim whitespaces from fields
+            inputTransactionJson.from = inputTransactionJson.from.trim();
+            inputTransactionJson.to = inputTransactionJson.to.trim();
+            inputTransactionJson.dateCreated = inputTransactionJson.dateCreated.trim();
+            inputTransactionJson.data = inputTransactionJson.data.trim();
+            inputTransactionJson.senderPubKey = inputTransactionJson.senderPubKey.trim();
+            inputTransactionJson.senderSignature[0] = inputTransactionJson.senderSignature[0].trim();
+            inputTransactionJson.senderSignature[1] = inputTransactionJson.senderSignature[1].trim();
+
+            // Convert Hex-valued strings to lower case
+            inputTransactionJson.from = inputTransactionJson.from.toLowerCase();
+            inputTransactionJson.to = inputTransactionJson.to.toLowerCase();
+            inputTransactionJson.senderPubKey = inputTransactionJson.senderPubKey.toLowerCase();
+            inputTransactionJson.senderSignature[0] = inputTransactionJson.senderSignature[0].toLowerCase();
+            inputTransactionJson.senderSignature[1] = inputTransactionJson.senderSignature[1].toLowerCase();
+
+            // Check for invalid field values
+            if (!utils.isValidAddress(inputTransactionJson.from)) {
+                return { errorMsg: "Invalid transaction: field 'from' should be a 40-Hex string" };
+            }
+            if (!utils.isValidAddress(inputTransactionJson.to)) {
+                return { errorMsg: "Invalid transaction: field 'to' should be a 40-Hex string" };
+            }
+            if (inputTransactionJson.value < 0) {
+                return { errorMsg: "Invalid transaction: field 'value' should be greater than or equal to 0" };
+            }
+            if (inputTransactionJson.fee < 10) {
+                return { errorMsg: "Invalid transaction: number field 'fee' should be greater than or equal to 10" };
+            }
+            if (!utils.isValid_ISO_8601_date(inputTransactionJson.dateCreated)) {
+                return { errorMsg: "Invalid transaction: field 'dateCreated' should be an ISO8601 date string" };
+            }
+            if (!utils.isValidPublicKey(inputTransactionJson.senderPubKey)) {
+                return { errorMsg: "Invalid transaction: field 'senderPubKey' should be a 65-Hex string" };
+            }
+            if (!utils.isValid_64_Hex_string(inputTransactionJson.senderSignature[0])) {
+                return { errorMsg: "Invalid transaction: first element of array field 'senderSignature' should be a 64-hex string value" };
+            }
+            if (!utils.isValid_64_Hex_string(inputTransactionJson.senderSignature[1])) {
+                return { errorMsg: "Invalid transaction: second element of array field 'senderSignature' should be a 64-hex string value" };
+            }
+            let publicAddress = CryptoUtils.getPublicAddressFromPublicKey(inputTransactionJson.senderPubKey);
+            if (inputTransactionJson.from !== publicAddress) {
+                return { errorMsg: "Invalid transaction: field 'senderPubKey' does not match the 'from' public address" };
+            }
+
+            let newTransaction = new Transaction(
+                inputTransactionJson.from, // address (40 hex digits)
+                inputTransactionJson.to, // address (40 hex digits)
+                inputTransactionJson.value, // integer (non negative)
+                inputTransactionJson.fee, // integer (non negative)
+                inputTransactionJson.dateCreated, // ISO8601_string
+                inputTransactionJson.data, // string (optional)
+                inputTransactionJson.senderPubKey, // hex_number[65]
+                inputTransactionJson.senderSignature); // hex_number[2][64]
+
+            // Validate senderSignature to confirm sender signed the Transaction
+            let validSignature = CryptoUtils.verifySignature(
+                newTransaction.transactionDataHash,
+                inputTransactionJson.senderPubKey,
+                { r: inputTransactionJson.senderSignature[0], s: inputTransactionJson.senderSignature[1]} );
+            if (!validSignature) {
+                return { errorMsg: "Invalid transaction: Invalid signature in the 'senderSignature' field" };
+            }
+
+            // Re-execute all transactions
+            if (!confirmedBalancesMap.has(inputTransactionJson.from)) {
+                confirmedBalancesMap.set(inputTransactionJson.from, 0);
+            }
+
+            if (!confirmedBalancesMap.has(inputTransactionJson.to)) {
+                confirmedBalancesMap.set(inputTransactionJson.to, 0);
+            }
+
+            if (confirmedBalancesMap.get(inputTransactionJson.from) >= inputTransactionJson.fee) {
+                inputTransactionJson.minedInBlockIndex = blockToValidate.index;
+
+                // The "from" address in a Transaction always pays the fee.
+                let tempBalance = confirmedBalancesMap.get(inputTransactionJson.from);
+                tempBalance -= inputTransactionJson.fee;
+                confirmedBalancesMap.set(inputTransactionJson.from, tempBalance);
+
+                // Add the "fee" to the Coinbase Transaction Value field.
+                coinbaseTransactionValue += inputTransactionJson.fee;
+
+                if (confirmedBalancesMap.get(inputTransactionJson.from) >= (inputTransactionJson.fee + inputTransactionJson.value)) {
+                    // Debit value from 'From' address
+                    tempBalance = confirmedBalancesMap.get(inputTransactionJson.from);
+                    tempBalance -= inputTransactionJson.value;
+                    confirmedBalancesMap.set(inputTransactionJson.from, tempBalance);
+
+                    // Credit value to 'To' address
+                    tempBalance = confirmedBalancesMap.get(inputTransactionJson.to);
+                    tempBalance += inputTransactionJson.value;
+                    confirmedBalancesMap.set(inputTransactionJson.to, tempBalance);
+
+                    inputTransactionJson.transferSuccessful = true;
+                } else {
+                    inputTransactionJson.transferSuccessful = false;
+                }
+
+                // At this point, we know that the Pending Transaction can be placed in the Next Block to be Mined.
+                pendingTransactionsToBePlacedInNextBlockForMiningMap.set(inputTransactionJson.from, inputTransactionJson);
+
+            } else {
+                console.log('from address does not have enough balance and the transaction will be ignored');
+            }
+
+        } // end of for loop
+
+        // Create coinbase Transaction
+        let coinbaseTransaction = new Transaction(
+            GenesisBlock.genesisFromAddress, // from: address (40 hex digits) string
+            blockToValidate.transactions[0].to, // to: address (40 hex digits) string
+            coinbaseTransactionValue, // value: integer (non negative)
+            0, // fee: integer (non negative)
+            GenesisBlock.genesisDateCreated, // ISO8601_string
+            "coinbase tx", // data: string (optional)
+            GenesisBlock.genesisSenderPubKey, // senderPubKey: hex_number[65] string
+            // senderSignature: hex_number[2][64] : 2-element array of (64 hex digit) strings
+            [GenesisBlock.genesisSenderSignature, GenesisBlock.genesisSenderSignature],
+            blockToValidate.index, // minedInBlockIndex: integer / null
+            true); // transferSuccessful: boolean
+
+
+        // Add the Coinbase transaction first and then the remaining transactions
+        let transactionsToBePlacedInNextBlockForMining = [ coinbaseTransaction ];
+        transactionsToBePlacedInNextBlockForMining.push.apply(
+            transactionsToBePlacedInNextBlockForMining,
+            Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+
+        return transactionsToBePlacedInNextBlockForMining;
+
     }
 
 
