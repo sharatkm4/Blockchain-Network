@@ -317,13 +317,22 @@ app.post('/peers/connect', (req, res) => {
 // Notify Peers about New Block Endpoint
 // This endpoint will notify the peers about a new block.
 app.post('/peers/notify-new-block', (req, res) => {
-    let response = node.notifyPeersAboutNewBlock(req.body);
+    node.notifyPeersAboutNewBlock(req.body).then( function(response) {
+        if (response.hasOwnProperty("errorMsg")) {
+            res.status(HttpStatus.BAD_REQUEST);
+            response = { errorMsg: response.errorMsg }
+        }
+
+        // console.log('node.connectToPeer response =', response);
+        res.end(JSON.stringify(response));
+    });
+    /*let response = node.notifyPeersAboutNewBlock(req.body);
 
     if (response.hasOwnProperty("errorMsg")) {
         res.status(HttpStatus.BAD_REQUEST);
     }
 
-    res.end(JSON.stringify(response));
+    res.end(JSON.stringify(response));*/
 });
 
 

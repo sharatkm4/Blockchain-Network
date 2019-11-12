@@ -1051,11 +1051,12 @@ module.exports = class Node {
         }
 
         // Notify all peers about the new chain
-        /*let peerUrls = Array.from(this.peers.values());
+        let peerUrls = Array.from(this.peers.values());
         let peerNodeIds = Array.from(this.peers.keys());
-        for (let i = 0; peerUrls.length; i++) {
+        for (let i = 0; i < peerUrls.length; i++) {
             let peerUrl = peerUrls[i];
 
+            console.log('Notify call -> ', peerUrl);
             let peerNotifyNewBlockRestfulUrl = peerUrl + "/peers/notify-new-block";
             let peerNotifyNewBlockJsonInput = {
                 blocksCount: peerInfo.blocksCount,
@@ -1063,7 +1064,7 @@ module.exports = class Node {
                 nodeUrl: peerInfo.nodeUrl
             }
             let peerNotifyNewBlockSuccessResponse = undefined;
-            axios.post(peerNotifyNewBlockRestfulUrl, peerNotifyNewBlockJsonInput, {timeout: restfulCallTimeout})
+            await axios.post(peerNotifyNewBlockRestfulUrl, peerNotifyNewBlockJsonInput, {timeout: restfulCallTimeout})
                 .then(function (response) {
                     console.log('peerNotifyNewBlock.response.status: ', response.status);
                     console.log('peerNotifyNewBlock.response.data: ', response.data);
@@ -1078,7 +1079,7 @@ module.exports = class Node {
                 this.peers.delete(peerNodeIds[i]);
                 response.warnings.push(` peerNotifyNewBlock call to ${peerNotifyNewBlockRestfulUrl} did not respond and the ${peerUrl} will be removed`);
             }
-        }*/
+        }
 
         console.log('End synchronizeChainFromPeer..');
 
@@ -1612,10 +1613,10 @@ module.exports = class Node {
 
     // Notify Peers about New Block Endpoint
     // This endpoint will notify the peers about a new block.
-    notifyPeersAboutNewBlock(jsonInput) {
+    async notifyPeersAboutNewBlock(jsonInput) {
 
         console.log();
-        console.log('start notifyPeersAboutNewBlock...');
+        console.log('start peerNotifiedAboutNewBlock...');
 
         // Check for missing fields
         if (!jsonInput.hasOwnProperty("blocksCount")) {
@@ -1657,11 +1658,69 @@ module.exports = class Node {
         }
 
         // It may take a while to sync with a Peer Node, so will not wait for the result.
-        this.synchronizeChainFromPeer(jsonInput);
+        let synchronizeChainFromPeerNotifyResponse = await this.synchronizeChainFromPeerNotify(jsonInput);
+        console.log('synchronizeChainFromPeerNotifyResponse -> ', synchronizeChainFromPeerNotifyResponse);
 
-        console.log('end notifyPeersAboutNewBlock...');
+        console.log('end peerNotifiedAboutNewBlock...');
 
         let response = { "message": "Thank you for the notification." };
+        return response;
+
+    }
+
+    // Synchronizing the chain from certain peer
+    async synchronizeChainFromPeerNotify(peerInfo) {
+
+        console.log('Start synchronizeChainFromPeerNotify..');
+
+        // If peer's chain cumulativeDifficulty is less then or equal to cumulativeDifficulty of this chain, then just return and don't replace
+        if (peerInfo.cumulativeDifficulty <= this.chain.calculateCumulativeDifficulty()) {
+            return { message: `Chain from ${peerInfo.nodeUrl} has a 'cumulativeDifficulty' that is less than or equal to this Node's chain - will not synchronize with peer` };
+        }
+
+        // If the peer chain has bigger difficulty, download it from /blocks
+        let getPeersBlocksRestfulUrl = peerInfo.nodeUrl + "/blocks";
+        let getPeersBlocksSuccessResponse = undefined;
+        await axios.get(getPeersBlocksRestfulUrl, {timeout: restfulCallTimeout})
+            .then(function (response) {
+                console.log('getPeersBlocks.response.status: ', response.status);
+                console.log('getPeersBlocks.response.data: ', response.data);
+                getPeersBlocksSuccessResponse = response.data;
+            })
+            .catch(function (error) {
+                console.log('getPeersBlocks.error.response.status: ', error.response.status);
+                console.log('getPeersBlocks.error.response.data: ', error.response.data);
+            });
+
+
+        // Remove peer if it is not responding with blocks
+        if (getPeersBlocksSuccessResponse === undefined) {
+            this.peers.delete(peerInfo.nodeId);
+            return {
+                errorType: badRequestErrorType,
+                errorMsg: `Could not get blocks from ${getPeersBlocksRestfulUrl} and the peer ${peerInfo.nodeUrl} will be removed`
+            }
+        }
+
+        // Validate the downloaded peer chain (blocks, transactions, etc.)
+        let validationResponse = this.validateDownloadedPeerChain(peerInfo.cumulativeDifficulty, getPeersBlocksSuccessResponse);
+        if (validationResponse.hasOwnProperty("errorMsg")) {
+            return validationResponse;
+        }
+
+        // If the peer chain is valid, replace the current chain with it
+        this.chain.blocks = getPeersBlocksSuccessResponse;
+
+        // Clear all the mining jobs since this node's chain is replaced with peer's chain
+        this.chain.miningJobs.clear();
+
+        let response = {
+            message: `Successfully synchronized peer's ${this.selfUrl} chain with other peer's ${peerInfo.nodeUrl} chain`,
+            warnings: [ ]
+        }
+
+        console.log('End synchronizeChainFromPeerNotify..');
+
         return response;
 
     }
