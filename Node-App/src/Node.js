@@ -118,8 +118,6 @@ module.exports = class Node {
     // This endpoint will print the list with transactions that have not been mined.
     getPendingTransactions() {
 
-        this.chain.pendingTransactions.push(this.chain.blocks[0].transactions[0]);
-
         let pendingTransactions = this.chain.pendingTransactions;
         let pendingTransactionsModifiedOutput = [];
 
@@ -920,10 +918,11 @@ module.exports = class Node {
         }
 
         // Synchronize the chain from peer
-        await this.synchronizeChainFromPeer(getNodeInfoSuccessResponse);
+        let synchronizeChainFromPeerResponse = await this.synchronizeChainFromPeer(getNodeInfoSuccessResponse);
+        console.log('synchronizeChainFromPeerResponse -> ', synchronizeChainFromPeerResponse);
 
         // Synchronize the pending transactions from peer
-        await this.synchronizePendingTransactionFromPeer(getNodeInfoSuccessResponse);
+        //await this.synchronizePendingTransactionFromPeer(getNodeInfoSuccessResponse);
 
         let response = {
             message: `Connected to peer: ${inputJson.peerUrl}`
@@ -1036,7 +1035,6 @@ module.exports = class Node {
 
         // Validate the downloaded peer chain (blocks, transactions, etc.)
         let validationResponse = this.validateDownloadedPeerChain(peerInfo.cumulativeDifficulty, getPeersBlocksSuccessResponse);
-        console.log('validateDownloadedPeerChain status: ', validationResponse)
         if (validationResponse.hasOwnProperty("errorMsg")) {
             return validationResponse;
         }
@@ -1053,7 +1051,7 @@ module.exports = class Node {
         }
 
         // Notify all peers about the new chain
-        let peerUrls = Array.from(this.peers.values());
+        /*let peerUrls = Array.from(this.peers.values());
         let peerNodeIds = Array.from(this.peers.keys());
         for (let i = 0; peerUrls.length; i++) {
             let peerUrl = peerUrls[i];
@@ -1065,7 +1063,7 @@ module.exports = class Node {
                 nodeUrl: peerInfo.nodeUrl
             }
             let peerNotifyNewBlockSuccessResponse = undefined;
-            await axios.post(peerNotifyNewBlockRestfulUrl, peerNotifyNewBlockJsonInput, {timeout: restfulCallTimeout})
+            axios.post(peerNotifyNewBlockRestfulUrl, peerNotifyNewBlockJsonInput, {timeout: restfulCallTimeout})
                 .then(function (response) {
                     console.log('peerNotifyNewBlock.response.status: ', response.status);
                     console.log('peerNotifyNewBlock.response.data: ', response.data);
@@ -1080,7 +1078,7 @@ module.exports = class Node {
                 this.peers.delete(peerNodeIds[i]);
                 response.warnings.push(` peerNotifyNewBlock call to ${peerNotifyNewBlockRestfulUrl} did not respond and the ${peerUrl} will be removed`);
             }
-        }
+        }*/
 
         console.log('End synchronizeChainFromPeer..');
 
@@ -1090,6 +1088,8 @@ module.exports = class Node {
 
     // Validate all the blocks downloaded from peer
     validateDownloadedPeerChain(peerCumulativeDifficulty, peerBlocksToValidate){
+
+        console.log('Start validateDownloadedPeerChain..');
 
         // Verify that size of Peer Blocks
         if (peerBlocksToValidate.length <= 0) {
@@ -1113,18 +1113,9 @@ module.exports = class Node {
         // Re-calculate the cumulative difficulty of the downloaded chain
         let reCalculatedCumulativeDifficulty = 16 ** peerBlocksToValidate[0].difficulty;
 
-        // Map to keep track of all the previous Block Hashes (blockHash => block)
-        let previousBlockHashes = new Map();
-        previousBlockHashes.set(peerBlocksToValidate[0].blockHash, peerBlocksToValidate[0]);
-
-        // Map to keep track of all the previous Transaction Data Hashes (transactionDataHash => Transaction)
-        let previousTransactionDataHashes = new Map();
-        previousTransactionDataHashes.set(peerBlocksToValidate[0].transactions[0].transactionDataHash, peerBlocksToValidate[0].transactions[0]);
-
         // Map to keep track of all the confirmed balances of the Peer Chain Transactions (address => value)
         let confirmedAccountBalances = new Map();
         confirmedAccountBalances.set(peerBlocksToValidate[0].transactions[0].to, peerBlocksToValidate[0].transactions[0].value);
-
 
         // Validate each block from the first to the last
         for (let i = 0; i < peerBlocksToValidate.length; i++) {
@@ -1300,14 +1291,21 @@ module.exports = class Node {
                 };
             }
 
-            // Validate the transactions in the block
-            let reCalculatedTransactions = this.validateTransactionsInBlock2(blockToValidate, confirmedAccountBalances);
+            // Validate and recalculate transactions in the block
+            let validateTransactionsResponse = this.validateTransactionsInBlock(blockToValidate, confirmedAccountBalances);
+            if (validateTransactionsResponse.errorMsg.length > 0) {
+                console.log('validateTransactionsResponse completed with error: ', validateTransactionsResponse.errorMsg);
+                return {
+                    errorMsg: validateTransactionsResponse.errorMsg,
+                    errorType: badRequestErrorType
+                };
+            }
+            console.log('validateTransactionsResponse completed successfully with # of transactions: ', validateTransactionsResponse.reCalculatedTransactions.length);
 
             // Re-calculate the blockDataHash and blockHash
             let blockToValidateCopy = new Block(
                 blockToValidate.index, // Index: integer (unsigned)
-               ///blockToValidate.transactions, // Transactions : Transaction[]
-                reCalculatedTransactions, // Transactions : Transaction[]
+                validateTransactionsResponse.reCalculatedTransactions, // Transactions : Transaction[]
                 blockToValidate.difficulty, // Difficulty: integer (unsigned)
                 blockToValidate.prevBlockHash, // PrevBlockHash: hex_number[64] string
                 blockToValidate.minedBy, // MinedBy: address (40 hex digits) string
@@ -1333,18 +1331,8 @@ module.exports = class Node {
                 };
             }
 
-            // Verify that the "blockToValidate.blockHash" is not the Block Hash of a previous block. If it's not, then place it in the
-            // "previousBlockHashes" Map for future reference.
-            if (previousBlockHashes.has(blockToValidate.blockHash)) {
-                return {
-                    errorMsg: `Peer Block ${i} has 'blockHash' field value that is the same as a previous block - each block in the blockchain should have a unique block hash`,
-                    errorType: badRequestErrorType
-                };
-            }
-            previousBlockHashes.set(blockToValidate.blockHash, blockToValidate);
-
             // Validate that prevBlockHash == the hash of the previous block
-            if (blockToValidate.prevBlockHash !== blocks[i-1].blockHash) {
+            if (blockToValidate.prevBlockHash !== peerBlocksToValidate[i-1].blockHash) {
                 return {
                     errorMsg: `Peer Block ${i} has a 'prevBlockHash' field value that is not equal to the 'blockHash' field value of previous Peer Block ${i-1} - they should have the same value`,
                     errorType: badRequestErrorType
@@ -1360,18 +1348,9 @@ module.exports = class Node {
             // Re-calculate the cumulative difficulty of the incoming chain
             reCalculatedCumulativeDifficulty += 16 ** blockToValidate.difficulty;
 
-            // Validate the transactions in the block
-            /*let validateTransactionsResponse = this.validateTransactionsInBlock(blockToValidate, previousTransactionDataHashes, confirmedAccountBalances);
-            if (validateTransactionsResponse.hasOwnProperty("errorMsg")) {
-                return {
-                    errorMsg: validateTransactionsResponse,
-                    errorType: badRequestErrorType
-                }
-            }*/
         } // End of for loop
 
-        // Let's check to see that the "peerCumulativeDifficulty" was calculated correctly by the Peer. It should equal the
-        // "reCalculatedCumulativeDifficulty" we just calculated.
+        // "peerCumulativeDifficulty" calculated by the Peer should be same as "reCalculatedCumulativeDifficulty"
         if (peerCumulativeDifficulty !== reCalculatedCumulativeDifficulty) {
             return {
                 errorMsg: `Peer Blockchain has incorrectly calculated it's 'cumulativeDifficulty' - cannot use this peer chain`,
@@ -1387,12 +1366,28 @@ module.exports = class Node {
             };
         }
 
+        console.log('End validateDownloadedPeerChain..');
+
         let response = { message: "successful validation" }
         return response;
     }
 
 
-    validateTransactionsInBlock2(blockToValidate, confirmedBalancesMap) {
+    // Validate the transactions in the block of a peer
+    // Step 1 -> Validate transaction fields and their values , recalculate the transaction data hash , validate the signature
+    // Step 2 -> Re-execute all transactions, re calculate the values of minedInBlockIndex and transferSuccessful fields
+    //
+    // Input:
+    // blockToValidate - peer Block with all the transactions
+    // confirmedAccountBalancesMap - map of  (address => value)
+    validateTransactionsInBlock(blockToValidate, confirmedBalancesMap) {
+
+        console.log('Start validateTransactionsInBlock..');
+
+        let validateTransactionsResponse = {
+            errorMsg: '',
+            reCalculatedTransactions: [ ]
+        }
 
         // Validate that the block has at least one transaction.
         if (blockToValidate.transactions.length === 0) {
@@ -1606,311 +1601,68 @@ module.exports = class Node {
             transactionsToBePlacedInNextBlockForMining,
             Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
 
-        return transactionsToBePlacedInNextBlockForMining;
+
+        console.log('End validateTransactionsInBlock..');
+
+        //return transactionsToBePlacedInNextBlockForMining;
+        validateTransactionsResponse.reCalculatedTransactions = transactionsToBePlacedInNextBlockForMining;
+        return validateTransactionsResponse;
 
     }
 
+    // Notify Peers about New Block Endpoint
+    // This endpoint will notify the peers about a new block.
+    notifyPeersAboutNewBlock(jsonInput) {
 
-    // Validate the transactions in the block of a peer
-    // Step 1 -> Validate transaction fields and their values , recalculate the transaction data hash , validate the signature
-    // Step 2 -> Re-execute all transactions, re calculate the values of minedInBlockIndex and transferSuccessful fields
-    //
-    // Input:
-    // blockToValidate - peer Block with all the transactions
-    // previousTransactionDataHashesMap - map of (transactionDataHash => Transaction)
-    // confirmedAccountBalancesMap - map of  (address => value)
-    validateTransactionsInBlock(blockToValidate, previousTransactionDataHashesMap, confirmedAccountBalancesMap) {
+        console.log();
+        console.log('start notifyPeersAboutNewBlock...');
 
-        // Validate that the block has at least one transaction.
-        if (blockToValidate.transactions.length === 0) {
-            return { errorMsg: `Peer Block ${blockToValidate.index} has no Transactions - there should be at least one Transaction` };
+        // Check for missing fields
+        if (!jsonInput.hasOwnProperty("blocksCount")) {
+            return { errorMsg: "Bad Request: field 'blocksCount' is missing" };
+        }
+        if (!jsonInput.hasOwnProperty("cumulativeDifficulty")) {
+            return { errorMsg: "Bad Request: field 'cumulativeDifficulty' is missing" };
+        }
+        if (!jsonInput.hasOwnProperty("nodeUrl")) {
+            return { errorMsg: "Bad Request: field 'nodeUrl' is missing" };
         }
 
-        // Block reward for the miner
-        let coinbaseTransactionValue = 5000000;
-
-        // Go through each Transaction and validate it.
-        for (let i = 0; i < blockToValidate.transactions.length; i++) {
-
-            let transactionToValidate = blockToValidate.transactions[i];
-
-            // Check for missing fields
-            if (!transactionToValidate.hasOwnProperty("from")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'from' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("to")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'to' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("value")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'value' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("fee")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'fee' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("dateCreated")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'dateCreated' is missing`};
-            }
-            if (!transactionToValidate.hasOwnProperty("data")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'data' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("senderPubKey")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'senderPubKey' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("transactionDataHash")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'transactionDataHash' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("senderSignature")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'senderSignature' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("minedInBlockIndex")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'minedInBlockIndex' is missing` };
-            }
-            if (!transactionToValidate.hasOwnProperty("transferSuccessful")) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'transferSuccessful' is missing` };
-            }
-
-            // Check for valid fields
-            if (typeof transactionToValidate.from !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'from' is not a string - it should be a 40-Hex lowercase string` };
-            }
-            if (typeof transactionToValidate.to !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'to' is not a string - it should be a 40-Hex lowercase string` };
-            }
-            if (!Number.isInteger(transactionToValidate.value)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'value' is not an integer - it should be an integer greater than or equal to 0` };
-            }
-            if (!Number.isInteger(transactionToValidate.fee)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'fee' is not an integer - it should be an integer greater than or equal to 10` };
-            }
-            if (typeof transactionToValidate.dateCreated !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'dateCreated' is not a string - it should be an ISO8601 date string as follows: YYYY-MM-DDTHH:MN:SS.MSSZ` };
-            }
-            if (typeof transactionToValidate.data !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'data' is not a string - it should be a string` };
-            }
-            if (typeof transactionToValidate.senderPubKey !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'senderPubKey' is not a string - it should be a 65-Hex lowercase string` };
-            }
-            if (typeof transactionToValidate.transactionDataHash !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'transactionDataHash' is not a string - it should be a 64-Hex lowercase string` };
-            }
-            if (!Array.isArray(transactionToValidate.senderSignature)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'senderSignature' is not an array - it should be a 2-element array of [64-hex lowercase string][64-hex lowercase string]` };
-            }
-            if (!Number.isInteger(transactionToValidate.minedInBlockIndex)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'minedInBlockIndex' is not an integer - it should be an integer greater than or equal to 0 and equal to the Block Index number it was mined` };
-            }
-            if (typeof transactionToValidate.transferSuccessful !== 'boolean') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'transferSuccessful' is not a boolean - it should be a boolean` };
-            }
-
-            // Check that the "senderSignature" is a two-element array.
-            if (transactionToValidate.senderSignature.length !== 2) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: array field 'senderSignature' does not have 2 elements - it should be a 2-element array of [64-hex lowercase string][64-hex lowercase string]` };
-            }
-
-            // Check that the first and second elements of the "senderSignature" array are each strings
-            if (typeof transactionToValidate.senderSignature[0] !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: first element of array field 'senderSignature' is not a string - it should be a 64-hex lowercase string` };
-            }
-            if (typeof transactionToValidate.senderSignature[1] !== 'string') {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: second element of array field 'senderSignature' is not a string - it should be a 64-hex lowercase string` };
-            }
-
-            // Check for valid field values
-            // Check that the "to" and "from" fields have valid Public Address string values.
-            if (!utils.isValidAddress(transactionToValidate.from)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: string field 'from' is not a 40-Hex string - it should be a 40-Hex lowercase string` };
-            }
-            if (!utils.isValidAddress(transactionToValidate.to)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: string field 'to' is not a 40-Hex string - it should be a 40-Hex lowercase string` };
-            }
-
-            // Check that the number "value" field has a value that is greater than or equal to zero.
-            if (transactionToValidate.value < 0) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: number field 'value' is less than 0 - it should be a number greater than or equal to 0` };
-            }
-
-            // Check that the "dateCreated" field is a valid ISO8601 date string.
-            if (!utils.isValid_ISO_8601_date(transactionToValidate.dateCreated)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'dateCreated' is not an ISO8601 date string - it should be an ISO8601 date string as follows: YYYY-MM-DDTHH:MN:SS.MSSZ` };
-            }
-
-            // Check that the "minedInBlockIndex" field has a value that equals the block index of the Block that it is inside.
-            if (transactionToValidate.minedInBlockIndex !== blockToValidate.index) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'minedInBlockIndex' is not equal to the Block Index number of the Block that it is inside` };
-            }
-
-            // Create a copy of the "transactionToValidate" so that we can have the "transactionDataHash" automatically re-calculated and check
-            // that the "transactionToValidate.transactionDataHash" field has the correct calue.
-            let transactionToValidateCopy = new Transaction(
-                transactionToValidate.from, // address (40 hex digits) string
-                transactionToValidate.to, // address (40 hex digits) string
-                transactionToValidate.value, // integer (non negative)
-                transactionToValidate.fee, // integer (non negative)
-                transactionToValidate.dateCreated, // ISO8601_string
-                transactionToValidate.data, // string (optional)
-                transactionToValidate.senderPubKey, // hex_number[65] string
-                transactionToValidate.senderSignature, // hex_number[2][64] : 2-element array of (64 hex digit) strings
-                transactionToValidate.minedInBlockIndex, // integer / null
-                transactionToValidate.transferSuccessful); // boolean
-            if (transactionToValidate.transactionDataHash !== transactionToValidateCopy.transactionDataHash) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'transactionDataHash' has an incorrect calculated value` };
-            }
-
-            // Let's verify if there exists a previous Transaction with the same "transactionDataHash" value. If no such previous Transaction exists, then
-            // add it to the "previousTransactionDataHashesMap".
-            if (previousTransactionDataHashesMap.has(transactionToValidate.transactionDataHash)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: there exists previously in the blockchain a transaction with the same 'transactionDataHash' value: ${transactionToValidate.transactionDataHash}` };
-            }
-            previousTransactionDataHashesMap.set(transactionToValidate.transactionDataHash, transactionToValidate);
-
-            // Check that the "senderPubKey" field is a valid Public Key string value.
-            if (!utils.isValidPublicKey(transactionToValidate.senderPubKey)) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: field 'senderPubKey' is not a 65-Hex lowercase string - it should be a 65-Hex lowercase string` };
-            }
-
-            // Check that the first and second elements of the "senderSignature" array are each 64-Hex string
-            if (!utils.isValid_64_Hex_string(transactionToValidate.senderSignature[0])) {
-                return { errorMsg: `Invalid transaction: first element of array field 'senderSignature' is not a 64-hex lowercase string value - it should be a 64-hex lowercase string` };
-            }
-            if (!utils.isValid_64_Hex_string(transactionToValidate.senderSignature[1])) {
-                return { errorMsg: `Invalid transaction: second element of array field 'senderSignature' is not a 64-hex lowercase string value - it should be a 64-hex lowercase string` };
-            }
-
-            // If this is the first Transaction in the Block, then we need to verify that it's a Coinbase Transaction with the correct values.
-            if (i === 0) {
-                // Verify correct "from" address value
-                if (transactionToValidate.from !== GenesisBlock.genesisFromAddress) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'from' is not equal a 40-Hex all zeros string value` };
-                }
-
-                // Verify correct "fee" value
-                if (transactionToValidate.fee !== 0) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'fee' is not equal to 0 (zero) - instead it's equal to ${transactionToValidate.fee}` };
-                }
-
-                // Verify that the "value" field is at least equal to the Block Reward of 5,000,000 micro-coins
-                if (transactionToValidate.value < coinbaseTransactionValue) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'value' is not equal to at least the block reward of ${coinbaseTransactionValue} micro-coins` };
-                }
-
-                // Verify the correct "data" value depending upon whether this is the Genesis Block or not.
-                if (transactionToValidate.minedInBlockIndex === 0) {
-                    if (transactionToValidate.data !== "genesis tx") {
-                        return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Genesis Block Coinbase Transaction ${i}: field 'data' is not equal to 'genesis tx' string` };
-                    }
-                }
-                else {
-                    if (transactionToValidate.data !== "coinbase tx") {
-                        return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'data' is not equal to 'coinbase tx' string` };
-                    }
-                }
-
-                // Verify that the "senderPubKey" field is an all Zeros 65-Hex string
-                if (transactionToValidate.senderPubKey != GenesisBlock.genesisSenderPubKey) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'senderPubKey' is not equal to an all zeros 65-Hex string` };
-                }
-
-                // Check that the first and second elements of the "senderSignature" array are each all Zeros 64-hex strings
-                if (transactionToValidate.senderSignature[0] !== GenesisBlock.genesisSenderSignature) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: first element of array field 'senderSignature' is not an all zeros 64-hex string` };
-                }
-                if (transactionToValidate.senderSignature[1] !== GenesisBlock.genesisSenderSignature) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: second element of array field 'senderSignature' is not an all zeros 64-hex string` };
-                }
-
-                // Verify that the "transferSuccessful" field has a boolean true value
-                if (!transactionToValidate.transferSuccessful) {
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction ${i}: field 'transferSuccessful' is equal to boolean false - it should be equal to boolean true` };
-                }
-
-                // Check first to see if the "to" Public Addess is in the "confirmedAccountBalancesMap", and if it is not, then add it initially with
-                // a balance of 0.
-                if (!confirmedAccountBalancesMap.has(transactionToValidate.to)) {
-                    confirmedAccountBalancesMap.set(transactionToValidate.to, 0);
-                }
-
-                // Now add in the correct balance for the Coinbase Transaction "to" Public Address to the "confirmedAccountBalancesMap".
-                // No need to worry about the "fee" for the Coinbase Transation, because it will always be zero.
-                let tempAmount = confirmedAccountBalancesMap.get(transactionToValidate.to);
-                tempAmount += transactionToValidate.value;
-                confirmedAccountBalancesMap.set(transactionToValidate.to, tempAmount);
-
-                continue;
-
-            }
-
-            // Check that the number "fee" field has a value that is greater than or equal to 10.
-            if (transactionToValidate.fee < 10) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: number field 'fee' is less than 10 - it should be a number greater than or equal to 10` };
-            }
-
-            // Validate the "senderPubKey": Make sure that the Public Address obtained from the "senderPubKey" matches the "to" Address.
-            let calculatedSenderPublicAddress = CryptoUtils.getPublicAddressFromPublicKey(transactionToValidate.senderPubKey);
-            if (transactionToValidate.from !== calculatedSenderPublicAddress) {
-                return { errorMsg: `Invalid transaction: field 'senderPubKey' does not match the 'from' public address when derving the public address from the public key` };
-            }
-
-            // Validate the "senderSignature" to make sure that the "from" Public Address signed the Transaction.
-            let validSignature = CryptoUtils.verifySignature(
-                transactionToValidate.transactionDataHash,
-                transactionToValidate.senderPubKey,
-                { r: transactionToValidate.senderSignature[0], s: transactionToValidate.senderSignature[1]} );
-            if (!validSignature) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: Invalid signature in the 'senderSignature' field` };
-            }
-
-            // Re-calculate balances to make sure that there are enough balances in the accounts inside of the Transaction
-            if (!confirmedAccountBalancesMap.has(transactionToValidate.from)) {
-                confirmedAccountBalancesMap.set(transactionToValidate.from, 0);
-            }
-            if (!confirmedAccountBalancesMap.has(transactionToValidate.to)) {
-                confirmedAccountBalancesMap.set(transactionToValidate.to, 0);
-            }
-
-            // 'From' should at least have balance of fee to pay
-            if (confirmedAccountBalancesMap.get(transactionToValidate.from) < transactionToValidate.fee) {
-                return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: Transaction in chain where the ${transactionToValidate.from} 'from' public address does not have enough to cover the ${transactionToValidate.fee} micro-coins amount - balance at the time was ${confirmedAccountBalancesMap.get(transactionToValidate.from)} micro-coins` };
-            }
-
-            coinbaseTransactionValue += transactionToValidate.fee;
-
-            // Subtract the "fee" amount from the "from" public address (regardless of whether transaction is successful or not)
-            let tempFeeAmount = confirmedAccountBalancesMap.get(transactionToValidate.from);
-            tempFeeAmount -= transactionToValidate.fee;
-            confirmedAccountBalancesMap.set(transactionToValidate.from, tempFeeAmount);
-
-
-            // If "from" public address does not enough value, transferSuccessful should have been false
-            if (confirmedAccountBalancesMap.get(transactionToValidate.from) < transactionToValidate.value) {
-
-                if (transactionToValidate.transferSuccessful !== false)
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: It's 'transferSuccessful' field is boolean true, but should be boolean false due to 'from' address not having enough to cover the 'value' field amount of micro-coins after deducting for the 'fee' amount - should have been boolean false.` };
-
-            } // If "from" public address does have enough value, transferSuccessful should have been set to true
-            else {
-
-                if (transactionToValidate.transferSuccessful !== true)
-                    return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Transaction ${i}: It's 'transferSuccessful' field is boolean false, but should be boolean true due to 'from' address having enough to cover the 'value' field amount of micro-coins after deducting for the 'fee' amount - should have been boolean false.` };
-
-                // Debit value from 'From' address
-                let tempFromAmount = confirmedAccountBalancesMap.get(transactionToValidate.from);
-                tempFromAmount -= transactionToValidate.value;
-                confirmedAccountBalancesMap.set(transactionToValidate.from, tempFromAmount);
-
-                // Credit value to 'To' address
-                let tempToAmount = confirmedAccountBalancesMap.get(transactionToValidate.to);
-                tempToAmount += transactionToValidate.value;
-                confirmedAccountBalancesMap.set(transactionToValidate.to, tempToAmount);
-            }
+        // Check for valid fields
+        if (!Number.isInteger(jsonInput.blocksCount)) {
+            return { errorMsg: "Bad Request: field 'blocksCount' is not an integer - it should be an integer greater than or equal to 1" };
+        }
+        if (!Number.isInteger(jsonInput.cumulativeDifficulty)) {
+            return { errorMsg: "Bad Request: field 'cumulativeDifficulty' is not an integer - it should be an integer greater than or equal to 0" };
+        }
+        if (typeof jsonInput.nodeUrl !== 'string') {
+            return { errorMsg: "Bad Request: field 'nodeUrl' is not a string - it should be a string with a length greater than or equal to 1" };
         }
 
-        if (blockToValidate.transactions[0].value !== coinbaseTransactionValue) {
-            return { errorMsg: `Peer Block ${blockToValidate.index} has invalid Coinbase Transaction 0: It's 'value' field does not equal the total of all the fees and block rewards - 'value' field is ${blockToValidate.transactions[0].value} but should be ${coinbaseTransactionValue}` };
+        // Check for valid field values
+        // Atleast genesis block should be present
+        if (jsonInput.blocksCount < 1) {
+            return { errorMsg: "Bad Request: field 'blocksCount' has an integer value less than 1 - it should be an integer greater than or equal to 1" };
         }
 
-        return { message: "successful validate of peer block ${blockToValidate.index}" };
+        // The "cumulativeDifficulty" should be greater than or equal to 0.
+        if (jsonInput.cumulativeDifficulty < 0) {
+            return { errorMsg: "Bad Request: field 'blocksCount' has an integer value less than 0 - it should be an integer greater than or equal to 0" };
+        }
+
+        jsonInput.nodeUrl = jsonInput.nodeUrl.trim();
+
+        if (jsonInput.nodeUrl.length == 0) {
+            return { errorMsg: "Bad Request: field 'nodeUrl' is an empty or white spaces string - it should be a non-white space string with a length greater than or equal to 1" };
+        }
+
+        // It may take a while to sync with a Peer Node, so will not wait for the result.
+        this.synchronizeChainFromPeer(jsonInput);
+
+        console.log('end notifyPeersAboutNewBlock...');
+
+        let response = { "message": "Thank you for the notification." };
+        return response;
 
     }
 

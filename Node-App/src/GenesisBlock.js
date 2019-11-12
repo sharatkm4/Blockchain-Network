@@ -21,7 +21,7 @@ const genesisMinedInBlockIndex = 0;
 const genesisTransferSuccessful = true;
 
 //TODO
-let faucetAddress = "0825b1b7d17ea1c1ff9ebe1c74d7c6d8a4a104dc";
+let faucetAddress = "c3293572dbe6ebc60de4a20ed0e21446cae66b17";
 
 const genesisCoinBaseTransaction = new Transaction(
     genesisFromAddress,
