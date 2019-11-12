@@ -13,7 +13,7 @@ module.exports = class Transaction {
     //senderSignature : hex_number[2][64]
     //minedInBlockIndex : integer / null (default will be null)
     //TransferSuccessful : bool (default will be false
-    constructor(from, to, value, fee, dateCreated, data, senderPubKey, senderSignature, minedInBlockIndex = null, transferSuccessful = false) {
+    constructor(from, to, value, fee, dateCreated, data, senderPubKey, senderSignature = undefined, minedInBlockIndex = null, transferSuccessful = false) {
         this.from = from;
         this.to = to;
         this.value = value;

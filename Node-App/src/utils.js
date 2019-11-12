@@ -1,7 +1,15 @@
 
 // validate if value contains ONLY digits
 function isNumeric(value) {
-    return /^\d+$/.test(value);
+    if (typeof value === 'string') {
+        return /^\d+$/.test(value);
+    }
+
+    if (typeof value === 'number') {
+        return (value >= 0);
+    }
+
+    return false;
 }
 
 // verify if the value is a valid Address (40-Hex)
