@@ -48,6 +48,7 @@ $(document).ready(function () {
 
         $('#passwordSendTransaction').val('');
         $('#transferValue').val('');
+		$('#transferFee').val('');
         $('#senderAddress').empty();
 
         $('#textareaSignedTransaction').val('');
@@ -245,6 +246,21 @@ $(document).ready(function () {
 				let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);
 				let publicAddress = wallet.address.toLowerCase().slice(2);
 				
+				// console.log('Public Key 1: ', masterNode.derivePath(derivationPath + i).publicKey); 
+				// 0204ef60ebb59cc42ec3290237975624d7afdf4e98de8e586cfa1892d0e9b63d83  66 hex
+				//console.log('Public Address 2: ', publicAddress); 
+				// 330486f5ab80a9137d6c6407b1ed00cb1a15a229 40 hex
+				
+				// Public address derived from ethers wallet has different length. Switching to manually derived one and not using ethers wallet.
+				let privateKey = masterNode.derivePath(derivationPath + i).privateKey;				
+				privateKey = privateKey.toLowerCase().slice(2); 
+				//console.log('Private Key: ', privateKey); // 5fbfa0a335bf3cb671afdb9b0ace4096968a2d29a2a0d7d07cc26350e1ad6e53  64 hex
+				let derivedPublicKey = getPublicKeyFromPrivateKey(privateKey);
+				console.log('Public Key: ', derivedPublicKey); // 04ef60ebb59cc42ec3290237975624d7afdf4e98de8e586cfa1892d0e9b63d830 65 hex
+				publicAddress = getPublicAddressFromPublicKey(derivedPublicKey);
+				console.log('Public Address: ', publicAddress); // ee5cbddb0bee5f161552185165e02e642375054a 40 hex
+	
+				
 				let nodeIdUrl = "http://localhost:5555";
 				//let nodeIdUrl = "https:/stormy-everglades-34766.herokuapp.com";				
 				let restfulUrl = nodeIdUrl + "/address/" + publicAddress + "/balance";
@@ -253,8 +269,8 @@ $(document).ready(function () {
 				
 				await axios.get(restfulUrl, {timeout: restfulCallTimeout})
 					.then(function (response) {						
-						console.log('response.data =', response.data);
-						console.log('response.status =', response.status);
+						//console.log('response.data =', response.data);
+						//console.log('response.status =', response.status);
 						restfulSuccessfulResponse = response.data;
 					})
 					.catch(function (error) {
@@ -325,19 +341,34 @@ $(document).ready(function () {
 				let option = $(`<option id=${wallet.address}>`).text(address);
 				$('#senderAddress').append(option);*/
 				
-				let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);				
+				/*let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);				
 				let address = wallet.address;
 				//let address = wallet.address.toLowerCase().slice(2);
 				
 				wallets[address] = wallet;				
 				let option = $(`<option id=${wallet.address}>`).text(address);
+				$('#senderAddress').append(option);*/
+				
+				// Public address derived from ethers wallet has different length. Switching to manually derived one and not using wallet.
+				let privateKey = masterNode.derivePath(derivationPath + i).privateKey;				
+				privateKey = privateKey.toLowerCase().slice(2); 
+				//console.log('Private Key: ', privateKey);
+				let derivedPublicKey = getPublicKeyFromPrivateKey(privateKey);
+				//console.log('Public Key: ', derivedPublicKey);
+				publicAddress = getPublicAddressFromPublicKey(derivedPublicKey);
+				//console.log('Public Address: ', publicAddress);
+				
+				// Append public key along with address for later use
+				//let option = $(`<option id=${publicAddress}>`).text(publicAddress);
+				let option = $(`<option id=${privateKey}_${derivedPublicKey}_${publicAddress}>`).text(publicAddress);
 				$('#senderAddress').append(option);
+				
 				
 			}
 		}			
     }
 
-    function signTransaction() {
+    /*function signTransaction() {
         let senderAddress = $('#senderAddress option:selected').attr('id');
 
 		let wallet = wallets[senderAddress];
@@ -371,7 +402,113 @@ $(document).ready(function () {
 			$('#textareaSignedTransaction').val(signedTransaction);
 		}
 		
-    }
+    }*/
+	
+	function signTransaction() {
+		console.log('Start signTransaction...');
+		
+		// 'From' address validation
+		/*let senderAddress = $('#senderAddress option:selected').attr('id');
+		senderAddress = senderAddress.toLowerCase().slice(2);		
+		console.log('senderAddress -> ', senderAddress);*/
+		
+		// 'PrivateKey', 'Public Key' and 'From' address validation
+		let privateKey_publicKey_senderAddress = $('#senderAddress option:selected').attr('id');
+		senderPrivateKey = privateKey_publicKey_senderAddress.split("_")[0];
+		senderPubKey = privateKey_publicKey_senderAddress.split("_")[1];
+		senderAddress = privateKey_publicKey_senderAddress.split("_")[2];
+		
+		//PrivateKey validation
+		if (!senderPrivateKey)
+			return showError("Invalid senderPrivateKey");		
+		if (!isValidPrivateKey(senderPrivateKey))
+			return showError("senderPrivateKey should be a 64-hex lower case string. ");
+		
+		//PublicKey validation
+		if (!senderPubKey)
+			return showError("Invalid senderPubKey");		
+		if (!isValidPublicKey(senderPubKey))
+			return showError("senderPubKey should be a 65-hex lower case string. ");
+		
+		// Address validation
+		if (!senderAddress)
+			return showError("Invalid senderAddress");
+		if (!isValidPublicAddress(senderAddress))
+			return showError("senderAddress should be a 40-hex lower case string. ");
+		
+		//console.log('senderPrivateKey -> ', senderPrivateKey);
+		console.log('senderPubKey -> ', senderPubKey);
+		console.log('senderAddress -> ', senderAddress);
+		
+		
+		// 'To' address validation
+		let recipientAddress = $('#recipientAddress').val();
+		if (!recipientAddress)
+			return showError("Invalid recipientAddress");		
+		if (!isValidPublicAddress(recipientAddress))
+			return showError("Recipient Address should be a 40-hex lower case string. ");		
+		console.log('recipientAddress -> ', recipientAddress);
+		
+		// 'Value' validation
+		let transferValue = $('#transferValue').val();
+		if (!transferValue)
+			return showError("Invalid transferValue");
+		if (!isNumeric(transferValue))
+			return showError("TransferValue should be a positive integer. ");		
+		transferValue = parseInt(transferValue);
+		console.log('transferValue -> ', transferValue);
+		
+		
+		// 'Fee' validation
+		let transferFee = $('#transferFee').val();
+		if (!transferFee)
+			return showError("Invalid transferFee");
+		if (!isNumeric(transferFee))
+			return showError("transferFee should be a positive integer. ");		
+		transferFee = parseInt(transferFee);
+		console.log('transferFee -> ', transferFee);
+		
+		// 'Data'
+		let dataToSend = $('#dataToSend').val().trim();		
+		if(!dataToSend)
+			dataToSend = 'Send Transaction'; //Default value		
+		console.log('dataToSend -> ', dataToSend);
+		
+		let dateCreated = new Date().toISOString();
+		
+		let transactionToSign = new Transaction(
+				senderAddress, // address (40 hex digits) string
+				recipientAddress, // address (40 hex digits) string
+				transferValue, // integer (non negative)
+				transferFee, // integer (non negative)
+				dateCreated, // ISO8601_string
+				dataToSend, // string (optional)
+				senderPubKey); // hex_number[65] string
+		
+		// Sign the Transaction to Send and get it's signature.
+		//
+		// Output: A Signature JavaScript object that has the following two main attributes:
+		// 1) r : 64-Hex string of the Signature "r" attribute
+		// 2) s : 64-Hex string of the Signature "s" attribute
+		let signature = createSignature(transactionToSign.transactionDataHash, senderPrivateKey);
+		let senderSignatureArray = [ signature.r, signature.s ];
+
+		let transactionToSend = {
+				from: transactionToSign.from,
+				to: transactionToSign.to,
+				value: transactionToSign.value,
+				fee: transactionToSign.fee,
+				dateCreated: transactionToSign.dateCreated,
+				data: transactionToSign.data,
+				senderPubKey: transactionToSign.senderPubKey,
+				senderSignature: senderSignatureArray
+		};
+
+		let displaySignedTransaction = JSON.stringify(transactionToSend, undefined, 2);
+		$('#textareaSignedTransaction').val(displaySignedTransaction);
+
+		console.log('End signTransaction...');		
+	}
 
     function sendSignedTransaction() {
         let signedTransaction = $('#textareaSignedTransaction').val();		
