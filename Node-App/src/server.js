@@ -137,18 +137,21 @@ async function sendTransactionToAllPeers(transaction) {
         peersDeleted: [ ]
     };
 
-    for (let i = 0; i = peerUrls.length; i++) {
+    for (let i = 0; i < peerUrls.length; i++) {
         let peerUrl = peerUrls[i];
+        console.log('sendTransactionToAllPeers call -> ', peerUrl);
         let restfulUrl = peerUrl + "/transactions/send";
         let successResponse = undefined;
         let errorResponse = undefined;
         await axios.post(restfulUrl, transaction, {timeout: restfulCallTimeout})
             .then(function (response) {
-                console.log('response = ', response);
+                console.log('sendTransactionToAllPeers.response.status: ', response.status);
+                console.log('sendTransactionToAllPeers.response.data: ', response.data);
                 successResponse = response;
             })
             .catch(function (error) {
-                console.log('error =', error);
+                console.log('sendTransactionToAllPeers.error.response.status: ', error.response.status);
+                console.log('sendTransactionToAllPeers.error.response.data: ', error.response.data);
                 errorResponse = error;
             });
 
@@ -164,15 +167,21 @@ async function sendTransactionToAllPeers(transaction) {
         } else if (errorResponse !== undefined) {
             theResponse.errorMsg = `Peer ${peerUrl} did not respond with success from call to /transactions/send`;
             theResponse.error = errorResponse;
+
             response.peersTransactionsSendErrorResponses.push(theResponse);
+
+            //console.log('sendTransactionToAllPeers Failure response: ', theResponse.errorMsg);
         } else if (successResponse !== undefined) {
             theResponse.message = `Peer ${peerUrl} did respond with success from call to /transactions/send`;
             response.peersTransactionsSendSuccessfulResponses.push(theResponse);
+
+            //console.log('sendTransactionToAllPeers Success response: ', theResponse.message);
         }
 
     }
 
-    //console.log('Response Object: ' + response);
+    //console.log('sendTransactionToAllPeers Success response: ' + response.peersTransactionsSendSuccessfulResponses[0].message);
+    //console.log('sendTransactionToAllPeers Failure response: ' + response.peersTransactionsSendErrorResponses[0].errorMsg);
 
 }
 
