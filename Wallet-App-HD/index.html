@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple HD Wallet - Ethers.js</title>
+    <link rel="stylesheet" type="text/css" href="wallet.css"/>
+    <script src="lib/ethers.min.js"></script>
+    <script src="lib/jquery-3.1.1.min.js"></script>
+    <script src="lib/jquery.qrcode.min.js"></script>	
+	<script src="lib/utils.js"></script>
+	<script src="lib/elliptic.min.js"></script>
+    <script src="lib/crypto-js.js"></script>
+    <script src="lib/CryptoUtils.js"></script>
+	<script src="lib/Transaction.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="wallet.js"></script>
+</head>
+
+<body>
+<header id="menu">
+    <a href="#" id="linkHome">Home</a>
+    <a href="#" id="linkCreateNewWallet">Create New Random Wallet</a>
+    <a href="#" id="linkImportWalletFromMnemonic">Open Wallet From Mnemonic</a>
+    <a href="#" id="linkImportWalletFromFile">Open Wallet From File</a>
+    <a href="#" id="linkShowMnemonic" class="after-login">Show Mnemonic</a>
+    <a href="#" id="linkShowAddressesAndBalances" class="after-login">View Addresses</a>
+    <a href="#" id="linkSendTransaction" class="after-login">Send Transaction</a>
+    <a href="#" id="linkDelete" class="after-login">Delete Wallet</a>
+</header>
+
+<main>
+    <section id="loadingBox">Loading ...</section>
+
+    <section id="infoBox"><header>x</header><p>Info</p></section>
+
+    <section id="errorBox"><header>x</header><p>Error</p></section>
+
+    <section id="viewHome">
+        <h1>Simple HD Wallet using ethers.js</h1>
+        Welcome to the simple wallet using <b>Ethereum Ropsten Testnet</b>.
+        <ul>
+            <li>The wallet is an <a href="https://en.bitcoin.it/wiki/Deterministic_wallet">HD wallet</a> kept <b>encrypted</b> in the Local Storage.</li>
+            <li>Wallet can be created by a random mnemonic phrase, opened from a mnemonic phrase or opened from a JSON file, all with a provided password.</li>
+            <li>By a valid password, the wallet can:
+                <ul>
+                    <li>Show its mnemonic phrase</li>
+                    <li>Show first 5 derived addresses and their balances</li>
+                    <li>Send transactions</li>
+                </ul>
+            </li>
+            <li><a href="https://github.com/ethers-io/ethers.js/"><b>Ethers.js</b></a> - complete Ethereum wallet implementation and library in JavaScript</li>
+        </ul>
+    </section>
+
+    <section id="viewCreateNewWallet">
+        <h1>Create a New Wallet</h1>
+        <p>Generate a new wallet: random mnemonic + password -> encrypted JSON.</p>
+        <span>Enter password: </span><input type="password" id="passwordCreateWallet">
+        <input type="button" id="buttonGenerateNewWallet" value="Generate Now"/>
+        <p>JSON:</p>
+        <textarea id="textareaCreateWalletResult" class="result" readonly="true"></textarea>
+    </section>
+
+    <section id="viewOpenWalletFromMnemonic">
+        <h1>Open a Wallet From Mnemonic</h1>
+        <p>Open a wallet: mnemonic + password -> encrypted JSON.</p>
+        <p>Enter your Mnemonic Phrase: </p>
+        <textarea id="textareaOpenWallet"></textarea>
+        <span>Enter password: </span><input type="password" id="passwordOpenWallet">
+        <input type="button" id="buttonOpenExistingWallet" value="Open Wallet"/>
+        <p>JSON:</p>
+        <textarea id="textareaOpenWalletResult" class="result" readonly="true"></textarea>
+    </section>
+
+    <section id="viewOpenWalletFromFile">
+        <h1>Open a Wallet From JSON File</h1>
+        <p>Open a JSON wallet: JSON + password -> checks if JSON is encrypted with password -> save encrypted JSON</p>
+        <p>Submit a JSON file</p>
+        <input type="file" id="walletForUpload"/> <br/>
+        <span>Enter password: </span><input type="password" id="passwordUploadWallet">
+        <input type="button" id="buttonUploadWallet" value="Open"/>
+    </section>
+
+    <section id="viewShowMnemonic">
+        <h1>Show Mnemonic</h1>
+        <p>Shows mnemonic: password -> unlock wallet -> mnemonic</p>
+        <span>Enter password: </span><input type="password" id="passwordShowMnemonic">
+        <input type="button" id="buttonShowMnemonic" value="Show Mnemonic"/>
+    </section>
+
+    <section id="viewShowAddressesAndBalances">
+        <h1>Show Addresses and Balances</h1>
+        <p>Show Addresses and Balances: password -> unlock wallet -> derive the first 5 addresses and show their balances</p>
+        <span>Enter password: </span><input type="password" id="passwordShowAddresses">
+        <input type="button" id="buttonShowAddresses" value="Show Addresses"/>
+        <div id="divAddressesAndBalances"></div>
+    </section>
+
+    <section id="viewSendTransaction">
+        <h1>Send Transaction</h1>
+        <p>Send Transaction: password -> unlock wallet -> derive 5 addresses -> show transaction form -> fill form -> sign transaction -> broadcast transaction</p>
+        <div>
+            <span>Enter password:</span><input type="password" id="passwordSendTransaction">
+            <input type="button" id="buttonSendAddresses" value="Unlock"/>
+        </div>
+        <div id="divSignAndSendTransaction">
+            <div><span>Sender:</span><select name="address" id="senderAddress"></select></div>
+            <div><span>Recipient:</span><input type="text" id="recipientAddress"></div>
+            <div><span>Value:</span><input type="number" id="transferValue"/></div>
+            <input type="button" id="buttonSignTransaction" value="Sign Transaction"/>
+            <textarea id="textareaSignedTransaction" class="signedTransaction" readonly="true"></textarea>
+            <input type="button" id="buttonSendSignedTransaction" value="Send Transaction"/>
+            <textarea id="textareaSendTransactionResult" class="result" readonly="true"></textarea>
+        </div>
+    </section>
+</main>
+
+<footer>HD Wallet Demo</footer>
+</body>
+</html>
