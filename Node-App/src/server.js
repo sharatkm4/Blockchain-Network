@@ -4,9 +4,13 @@ var Node = require("./Node");
 var utils = require('./utils');
 var node = null;
 
-//Parse JSON Message Body in POST RESTFul Services.
+// Parse JSON Message Body in POST RESTFul Services.
 var bodyParser = require('body-parser');
 app.use(bodyParser.json())
+
+// Enable CORS so that GET and POST calls from the browser works
+var cors = require('cors');
+app.use(cors());
 
 var HttpStatus = require('http-status-codes');
 var axios = require('axios');
