@@ -2,6 +2,8 @@ $(document).ready(function () {
     const derivationPath = "m/44'/60'/0'/0/";
     const provider = ethers.providers.getDefaultProvider('ropsten');
 
+	let nodeIdUrl = "http://localhost:5555";
+	//let nodeIdUrl = "https:/stormy-everglades-34766.herokuapp.com";
 	var restfulCallTimeout = 60000;
 	
     let wallets = {};
@@ -243,8 +245,8 @@ $(document).ready(function () {
 					})
 					.catch(showError)*/
 					
-				let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);
-				let publicAddress = wallet.address.toLowerCase().slice(2);
+				//let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);
+				//let publicAddress = wallet.address.toLowerCase().slice(2);
 				
 				// console.log('Public Key 1: ', masterNode.derivePath(derivationPath + i).publicKey); 
 				// 0204ef60ebb59cc42ec3290237975624d7afdf4e98de8e586cfa1892d0e9b63d83  66 hex
@@ -257,12 +259,9 @@ $(document).ready(function () {
 				//console.log('Private Key: ', privateKey); // 5fbfa0a335bf3cb671afdb9b0ace4096968a2d29a2a0d7d07cc26350e1ad6e53  64 hex
 				let derivedPublicKey = getPublicKeyFromPrivateKey(privateKey);
 				console.log('Public Key: ', derivedPublicKey); // 04ef60ebb59cc42ec3290237975624d7afdf4e98de8e586cfa1892d0e9b63d830 65 hex
-				publicAddress = getPublicAddressFromPublicKey(derivedPublicKey);
+				let publicAddress = getPublicAddressFromPublicKey(derivedPublicKey);
 				console.log('Public Address: ', publicAddress); // ee5cbddb0bee5f161552185165e02e642375054a 40 hex
 	
-				
-				let nodeIdUrl = "http://localhost:5555";
-				//let nodeIdUrl = "https:/stormy-everglades-34766.herokuapp.com";				
 				let restfulUrl = nodeIdUrl + "/address/" + publicAddress + "/balance";
 				let restfulSuccessfulResponse = undefined;
 				let restfulErrorResponse = undefined;
@@ -274,24 +273,14 @@ $(document).ready(function () {
 						restfulSuccessfulResponse = response.data;
 					})
 					.catch(function (error) {
-						// console.log('error =', error);
-
-						// When in browser, to get the response body, you must get it from the "error.response" or else
-						// you will not be able to get it outside of here.
-						//
-						// Reference ---> https://github.com/axios/axios/issues/960
-						if (error.response === undefined) {
-							restfulErrorResponse = error;
-						}
-						else {
-							restfulErrorResponse = error.response;
-						}
-				});				
+						console.log('error.response.status: ', error.response.status);
+						console.log('error.response.data: ', error.response.data);
+						restfulErrorResponse = error.response;												
+					});				
 				
 				// If the RESTFul call to Blockchain Node yielded no response after the timeout, then just display an error message.
 				if (restfulSuccessfulResponse === undefined && restfulErrorResponse === undefined) {
-					errorMessage = `Attempt to call ${restfulUrl } to obtain account balance failed due to timeout - unable to ` +
-						`get account balance.`
+					errorMessage = `Attempt to call ${restfulUrl } to obtain account balance failed due to timeout`
 					showError(errorMessage);
 				}
 				else if (restfulErrorResponse !== undefined) {
@@ -507,10 +496,10 @@ $(document).ready(function () {
 		let displaySignedTransaction = JSON.stringify(transactionToSend, undefined, 2);
 		$('#textareaSignedTransaction').val(displaySignedTransaction);
 
-		console.log('End signTransaction...');		
+		console.log('End signTransaction...');
 	}
 
-    function sendSignedTransaction() {
+    /*function sendSignedTransaction() {
         let signedTransaction = $('#textareaSignedTransaction').val();		
 		provider.sendTransaction(signedTransaction)
 			.then(hash => {
@@ -520,7 +509,72 @@ $(document).ready(function () {
 				$('#textareaSendTransactionResult').val(etherscanUrl);
 			})
 			.catch(showError);
-    }
+    }*/
+	
+	async function sendSignedTransaction() {
+		console.log('Start sendSignedTransaction...');
+		
+		let signedTransactionJsonString = $('#textareaSignedTransaction').val();
+        if (signedTransactionJsonString.length === 0)
+			return showError("Transaction needs to be created and signed first !!");
+		
+		let restfulUrl = nodeIdUrl + "/transactions/send";
+		let restfulSuccessfulResponse = undefined;
+		let restfulErrorResponse = undefined;
+		
+		let signedTransactionJson = JSON.parse(signedTransactionJsonString);
+		
+		await axios.post(restfulUrl, signedTransactionJson, {timeout: restfulCallTimeout})
+			.then(function (response) {
+				//console.log('response.status =', response.status);
+				//console.log('response.data =', response.data);				
+				restfulSuccessfulResponse = response.data;
+			})
+			.catch(function (error) {
+				console.log('error.response.status: ', error.response.status);
+                console.log('error.response.data: ', error.response.data);
+				restfulErrorResponse = error.response;								
+  			});
+			
+		let errorMessage = undefined;
+  		let displaySendTransactionInfo = undefined;	
+		
+		// If the RESTFul call to Blockchain Node yielded no response after the timeout, then just display an error message.
+		if (restfulSuccessfulResponse === undefined && restfulErrorResponse === undefined) {
+			errorMessage = `Unable to send transaction to ${restfulUrl} due to timeout`
+			showError(errorMessage);
+		} else if (restfulErrorResponse !== undefined) {
+			errorMessage = `Unable to send transaction to ${restfulUrl} due to below error`;
+			showError(errorMessage);
+
+			// Technique to prettify obtained from the https://coderwall.com/p/buwfjw/pretty-print-json-with-native-javascript
+			// web page.
+			displaySendTransactionInfo = JSON.stringify(restfulErrorResponse, undefined, 2);
+
+			if (restfulErrorResponse.data !== undefined) {
+				displaySendTransactionInfo = "Error Status: " + restfulErrorResponse.status + "\n" +
+					"Error Status Description: " + restfulErrorResponse.statusText + "\n\n" +
+					"Error Message Details: \n";
+
+				if (restfulErrorResponse.data.errorMsg !== undefined) {
+					displaySendTransactionInfo += restfulErrorResponse.data.errorMsg;
+				}
+				else {
+					displaySendTransactionInfo += JSON.stringify(restfulErrorResponse.data, undefined, 2);
+				}
+			}
+
+			$('#textareaSendTransactionResult').val(displaySendTransactionInfo);
+		} else { 
+			// Success response
+			showInfo("Transaction hash: " + restfulSuccessfulResponse.transactionDataHash);
+			let blockChainNetworkUrl = nodeIdUrl + "/transactions/" + restfulSuccessfulResponse.transactionDataHash;
+			
+			$('#textareaSendTransactionResult').val(blockChainNetworkUrl);
+		}
+		
+		console.log('End sendSignedTransaction...');
+	}	
 
     function deleteWallet() {
         localStorage.clear();
