@@ -96,6 +96,12 @@
         <p>Show Addresses and Balances: password -> unlock wallet -> derive the first 5 addresses and show their balances</p>
         <span>Enter password: </span><input type="password" id="passwordShowAddresses">
         <input type="button" id="buttonShowAddresses" value="Show Addresses"/>
+		<div><span>NodeURL:</span><select name="selectNodeUrlShowAddresses" id="selectNodeUrlShowAddressesID" >
+							<option id="http://localhost:5555">Node5555</option>
+							<option id="http://localhost:5556">Node5556</option>
+							<option id="http://localhost:5557">Node5557</option>
+							<option id="http://localhost:5558">Node5558</option>
+							</select></div>
         <div id="divAddressesAndBalances"></div>
     </section>
 
@@ -107,7 +113,7 @@
             <input type="button" id="buttonSendAddresses" value="Unlock"/>
         </div>
         <div id="divSignAndSendTransaction">
-			<div><span>NodeURL:</span><select name="nodeUrl" id="nodeUrl">
+			<div><span>NodeURL:</span><select name="nodeUrl" id="nodeUrlID">
 							<option id="http://localhost:5555">Node5555</option>
 							<option id="http://localhost:5556">Node5556</option>
 							<option id="http://localhost:5557">Node5557</option>

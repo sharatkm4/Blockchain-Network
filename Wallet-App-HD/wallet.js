@@ -68,6 +68,8 @@ $(document).ready(function () {
     $('#buttonSignTransaction').click(signTransaction);
     $('#buttonSendSignedTransaction').click(sendSignedTransaction);
 
+	$("#selectNodeUrlShowAddressesID").on("change",showAddressesAndBalances);
+	
     $('#linkDelete').click(deleteWallet);
 
     function showView(viewName) {
@@ -230,6 +232,9 @@ $(document).ready(function () {
 			
 		async function renderAddressesAndBalances(wallet) {
 			$('#divAddressesAndBalances').empty();
+			
+			nodeIdUrl = $('#selectNodeUrlShowAddressesID option:selected').attr('id');
+			console.log('nodeIdUrl_ShowAddressesAndBalances', nodeIdUrl);
 			
 			let masterNode = ethers.HDNode.fromMnemonic(wallet.mnemonic);
 
@@ -514,11 +519,14 @@ $(document).ready(function () {
 	async function sendSignedTransaction() {
 		console.log('Start sendSignedTransaction...');
 		
+		nodeIdUrl = $('#nodeUrlID option:selected').attr('id');
+		console.log('nodeIdUrl_sendSignedTransaction: ', nodeIdUrl);
+		
 		let signedTransactionJsonString = $('#textareaSignedTransaction').val();
         if (signedTransactionJsonString.length === 0)
 			return showError("Transaction needs to be created and signed first !!");
 		
-		nodeIdUrl = $('#nodeUrl option:selected').attr('id');
+		//nodeIdUrl = $('#nodeUrlID option:selected').attr('id');
 		
 		let restfulUrl = nodeIdUrl + "/transactions/send";
 		let restfulSuccessfulResponse = undefined;
