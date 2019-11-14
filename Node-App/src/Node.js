@@ -1016,7 +1016,7 @@ module.exports = class Node {
         await axios.get(getPeersBlocksRestfulUrl, {timeout: restfulCallTimeout})
             .then(function (response) {
                 console.log('getPeersBlocks.response.status: ', response.status);
-                console.log('getPeersBlocks.response.data: ', response.data);
+                //console.log('getPeersBlocks.response.data: ', response.data);
                 getPeersBlocksSuccessResponse = response.data;
             })
             .catch(function (error) {
@@ -1685,7 +1685,7 @@ module.exports = class Node {
         await axios.get(getPeersBlocksRestfulUrl, {timeout: restfulCallTimeout})
             .then(function (response) {
                 console.log('getPeersBlocks.response.status: ', response.status);
-                console.log('getPeersBlocks.response.data: ', response.data);
+                //console.log('getPeersBlocks.response.data: ', response.data);
                 getPeersBlocksSuccessResponse = response.data;
             })
             .catch(function (error) {

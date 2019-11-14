@@ -233,14 +233,19 @@ async function notifyPeersWithNewMinedBlock() {
 
     for (let i = 0; i < peerUrls.length; i++) {
         let peerUrl = peerUrls[i];
+        console.log('notifyPeersWithNewMinedBlock URL -> ', peerUrl);
         let restfulUrl = peerUrl + "/peers/notify-new-block";
         let normalResponse = undefined;
         let errorResponse = undefined;
         await axios.post(restfulUrl, notificationMessageContents, { timeout: restfulCallTimeout })
             .then(function (response) {
+                console.log('notifyPeersWithNewMinedBlock.response.status: ', response.status);
+                console.log('notifyPeersWithNewMinedBlock.response.data: ', response.data);
                 normalResponse = response.data;
             })
             .catch(function (error) {
+                console.log('notifyPeersWithNewMinedBlock.error.response.status: ', error.response.status);
+                console.log('notifyPeersWithNewMinedBlock.error.response.data: ', error.response.data);
                 errorResponse = error;
             });
 
@@ -260,8 +265,9 @@ async function notifyPeersWithNewMinedBlock() {
 
             response.peersNotifyNewBlockErrorResponses.push(theResponse);
         } else {
-            theResponse.message = `Sucessfully sent /peers/notify-new-block to peer ${peerUrl}`;
+            theResponse.message = `Successfully sent /peers/notify-new-block to peer ${peerUrl}`;
             response.peersNotifyNewBlockSuccessfulResponses.push(theResponse);
+            console.log(`Successfully sent /peers/notify-new-block to peer ${peerUrl}`);
         }
     }
 }
