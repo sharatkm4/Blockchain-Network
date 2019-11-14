@@ -50,19 +50,12 @@ async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res) {
 	if (restfulSuccessfulResponse === undefined && restfulErrorResponse === undefined) {
 		errorMessage = `Unable to send transaction to ${restfulUrl} due to timeout`;
 
-		//res.json({ errorMsg: errorMessage });
 		response = { errorMsg: errorMessage };
 		res.status(HttpStatus.NOT_FOUND);
-
 
 	} else if (restfulErrorResponse !== undefined) {
 
 		res.status(HttpStatus.NOT_FOUND);
-
-		displaySendTransactionInfo = `Unable to send transaction to ${restfulUrl} due to below error`;
-
-
-		displaySendTransactionInfo = JSON.stringify(restfulErrorResponse, undefined, 2);
 
 		if (restfulErrorResponse.data !== undefined) {
 			displaySendTransactionInfo = "Error Status: " + restfulErrorResponse.status + "\n" +
@@ -77,8 +70,6 @@ async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res) {
 			}
 			res.status(restfulErrorResponse.status);
 		}
-
-		//res.json({ errorMsg: displaySendTransactionInfo });
 
 		response = { errorMsg: displaySendTransactionInfo };
 
@@ -156,9 +147,6 @@ app.post('/sendCoins', (req, res) => {
 			}
 
 		});
-
-
-		
 	
 });	
 

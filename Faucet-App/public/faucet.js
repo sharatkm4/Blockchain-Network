@@ -66,7 +66,7 @@ $(document).ready(function () {
 		if (!recipientAddress)
 			return showError("Invalid recipientAddress");		
 		if (!isValidPublicAddress(recipientAddress))
-			return showError("Recipient Address should be a 40-hex lower case string. ");		
+			//return showError("Recipient Address should be a 40-hex lower case string. ");
 		console.log('recipientAddress -> ', recipientAddress);
 		
 		// 'Value' validation
@@ -118,8 +118,6 @@ $(document).ready(function () {
 		let restfulSuccessfulResponse = undefined;
 		let restfulErrorResponse = undefined;
 
-		//showInfo(`Waiting for response from Blockchain Node ${nodeIdUrl} ....`);
-
 		await axios.post(restfulUrl, sendTestCoinsJsonInput, {timeout: restfulCallTimeout})
 			.then(response => {				
 				restfulSuccessfulResponse = response.data;
@@ -132,10 +130,7 @@ $(document).ready(function () {
 				restfulErrorResponse = error.response;
   			});
 
-  		//hideInfo();
-
    		let errorMessage = undefined;
-   		let displaySendTransactionInfo = undefined;
 
  		// If the RESTFul call to Blockchain Node yielded no response after the timeout, then just display an error message.
  		if (restfulSuccessfulResponse === undefined && restfulErrorResponse === undefined) {
@@ -145,39 +140,14 @@ $(document).ready(function () {
  		else if (restfulErrorResponse !== undefined) {
  			errorMessage = `Unable to send transaction to ${restfulUrl} due to below error`;
  			showError(errorMessage);
-
- 			displaySendTransactionInfo = JSON.stringify(restfulErrorResponse, undefined, 2);
-
- 			console.log('restfulErrorResponse =', restfulErrorResponse);
-
- 			if (restfulErrorResponse.data !== undefined) {
- 				displaySendTransactionInfo = "Error Status: " + restfulErrorResponse.status + "\n" +
- 					"Error Status Description: " + restfulErrorResponse.statusText + "\n\n" +
- 					"Error Message Details: \n";
-
- 				if (restfulErrorResponse.data.errorMsg !== undefined) {
-					console.log('sendTestCoins restfulErrorResponse.data.errorMsg =', restfulErrorResponse.data.errorMsg);
- 					displaySendTransactionInfo += restfulErrorResponse.data.errorMsg + "\n\n\n";
- 					console.log('sendTestCoins restfulErrorResponse.data.displaySendTransactionInfo =', restfulErrorResponse.data.displaySendTransactionInfo);
- 					if (restfulErrorResponse.data.displaySendTransactionInfo !== undefined) {
-						displaySendTransactionInfo += restfulErrorResponse.data.displaySendTransactionInfo;
-					}
- 				}
- 				else {
- 					displaySendTransactionInfo += JSON.stringify(restfulErrorResponse.data, undefined, 2);
- 				}
- 			}
-
- 			$('#textareaSendTransactionResult').val(displaySendTransactionInfo);
+ 			$('#textareaSendTransactionResult').val(restfulErrorResponse.data.errorMsg);
  		}
  		else {
 			// Success response
  			recipientAddresstoReceivedCoinsTimestampMap.set(recipientAddress, new Date().getTime());
 			showInfo(`We sent ${transferValue} micro-coins to address ${recipientAddress}`);
-
 			let displaySendTransactionInfo = JSON.parse(restfulSuccessfulResponse);
 			$('#textareaSendTransactionResult').val(displaySendTransactionInfo.message);
-
 		}
 		
 		console.log('End sendTestCoins...');
