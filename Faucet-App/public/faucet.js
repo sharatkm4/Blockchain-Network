@@ -19,8 +19,8 @@ $(document).ready(function () {
 		
 	});
 
-	$('#buttonSendTestCoins').click(signAndSendTransaction);
-
+	//$('#buttonSendTestCoins').click(signAndSendTransaction);
+	$('#buttonSendTestCoins').click(sendTestCoins);
 
     function showView(viewName) {
         // Hide all views and show the selected view only
@@ -57,6 +57,133 @@ $(document).ready(function () {
     function hideLoadingBar() {
         $('#loadingBox').hide();
     }
+	
+	async function sendTestCoins() {
+		console.log('Start sendTestCoins...');
+		
+		// 'To' address validation
+		let recipientAddress = $('#recipientAddress').val();
+		if (!recipientAddress)
+			return showError("Invalid recipientAddress");		
+		if (!isValidPublicAddress(recipientAddress))
+			return showError("Recipient Address should be a 40-hex lower case string. ");		
+		console.log('recipientAddress -> ', recipientAddress);
+		
+		// 'Value' validation
+		let transferValue = $('#transferValue').val();
+		if (!transferValue)
+			return showError("Invalid transferValue");
+		if (!isNumeric(transferValue))
+			return showError("TransferValue should be a positive integer. ");		
+		transferValue = parseInt(transferValue);
+		if (transferValue > 1000000) { 
+			return showError("Faucet can only send upto 1 coin (1,000,000 Micro coins) !!");
+		}
+		console.log('transferValue -> ', transferValue);
+		
+		// One request per address per hour validation
+		if (recipientAddresstoReceivedCoinsTimestampMap.has(recipientAddress)) {
+			let dateTimeRecipientAddressReceivedCoins = recipientAddresstoReceivedCoinsTimestampMap.get(recipientAddress);
+			let currentTime = new Date().getTime();
+
+			let deltaTime = Math.abs(currentTime - dateTimeRecipientAddressReceivedCoins);
+			let oneHourInMilliseconds = 3600000;
+			if (deltaTime <= oneHourInMilliseconds) {
+				return showError('The Recipient Address has already received Coins. Only one request per Public Address per hour is allowed.');
+			}
+		}
+		
+		// Transfer 'Fee'
+		let transferFee = 100; //Transfer fee is hard-coded
+		console.log('transferFee -> ', transferFee);
+		
+		nodeIdUrl = $('#nodeUrl option:selected').attr('id');
+		
+		// 'Data'
+		let dataToSend = 'Faucet transaction to ' + recipientAddress;
+		console.log('dataToSend -> ', dataToSend);		
+		
+		let sendTestCoinsJsonInput = {
+				'recipientAddress': recipientAddress,
+				'transferValue': transferValue,
+				'transferFee': transferFee,
+				'dataToSend': dataToSend,
+				'nodeIdUrl': nodeIdUrl
+		};
+		
+		console.log('sendTestCoinsJsonInput = ', sendTestCoinsJsonInput);
+
+		let restfulUrl = "http://localhost:7777/sendCoins";
+		//let restfulUrl = "/sendCoins";
+		let restfulSuccessfulResponse = undefined;
+		let restfulErrorResponse = undefined;
+
+		//showInfo(`Waiting for response from Blockchain Node ${nodeIdUrl} ....`);
+
+		await axios.post(restfulUrl, sendTestCoinsJsonInput, {timeout: restfulCallTimeout})
+			.then(response => {				
+				restfulSuccessfulResponse = response.data;
+				console.log('response.status: ', response.status);
+				console.log('response.data: ', response.data);
+			})
+			.catch(function (error) {
+				console.log('error.response.status: ', error.response.status);
+                console.log('error.response.data: ', error.response.data);
+				restfulErrorResponse = error.response;
+  			});
+
+  		//hideInfo();
+
+   		let errorMessage = undefined;
+   		let displaySendTransactionInfo = undefined;
+
+ 		// If the RESTFul call to Blockchain Node yielded no response after the timeout, then just display an error message.
+ 		if (restfulSuccessfulResponse === undefined && restfulErrorResponse === undefined) {
+ 			errorMessage = `Unable to send transaction to ${restfulUrl} due to timeout`
+ 			showError(errorMessage);
+ 		}
+ 		else if (restfulErrorResponse !== undefined) {
+ 			errorMessage = `Unable to send transaction to ${restfulUrl} due to below error`;
+ 			showError(errorMessage);
+
+ 			displaySendTransactionInfo = JSON.stringify(restfulErrorResponse, undefined, 2);
+
+ 			console.log('restfulErrorResponse =', restfulErrorResponse);
+
+ 			if (restfulErrorResponse.data !== undefined) {
+ 				displaySendTransactionInfo = "Error Status: " + restfulErrorResponse.status + "\n" +
+ 					"Error Status Description: " + restfulErrorResponse.statusText + "\n\n" +
+ 					"Error Message Details: \n";
+
+ 				if (restfulErrorResponse.data.errorMsg !== undefined) {
+					console.log('sendTestCoins restfulErrorResponse.data.errorMsg =', restfulErrorResponse.data.errorMsg);
+ 					displaySendTransactionInfo += restfulErrorResponse.data.errorMsg + "\n\n\n";
+ 					console.log('sendTestCoins restfulErrorResponse.data.displaySendTransactionInfo =', restfulErrorResponse.data.displaySendTransactionInfo);
+ 					if (restfulErrorResponse.data.displaySendTransactionInfo !== undefined) {
+						displaySendTransactionInfo += restfulErrorResponse.data.displaySendTransactionInfo;
+					}
+ 				}
+ 				else {
+ 					displaySendTransactionInfo += JSON.stringify(restfulErrorResponse.data, undefined, 2);
+ 				}
+ 			}
+
+ 			$('#textareaSendTransactionResult').val(displaySendTransactionInfo);
+ 		}
+ 		else {
+			// Success response
+ 			recipientAddresstoReceivedCoinsTimestampMap.set(recipientAddress, new Date().getTime());
+			showInfo(`We sent ${transferValue} micro-coins to address ${recipientAddress}`);
+
+			let displaySendTransactionInfo = JSON.parse(restfulSuccessfulResponse);
+			$('#textareaSendTransactionResult').val(displaySendTransactionInfo.message);
+
+		}
+		
+		console.log('End sendTestCoins...');
+	}
+	
+	
 
 	async function signAndSendTransaction() {
 		console.log('Start signAndSendTransaction...');
