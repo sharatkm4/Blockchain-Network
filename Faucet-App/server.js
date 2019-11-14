@@ -1,9 +1,9 @@
 var express = require('express');
 var app = express();
 
-var utils = require('./utils');
-var CryptoUtils = require('./CryptoUtils');
-var Transaction = require('./Transaction');
+var utils = require('./src/utils');
+var CryptoUtils = require('./src/CryptoUtils');
+var Transaction = require('./src/Transaction');
 
 // Parse JSON Message Body in POST RESTFul Services.
 var bodyParser = require('body-parser');
@@ -18,7 +18,7 @@ var axios = require('axios');
 var restfulCallTimeout = 60000; //60 seconds
 
 // Enable static access to the "/public" folder
-app.use(express.static('../public'));
+app.use(express.static('public'));
 
 
 async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res) {
