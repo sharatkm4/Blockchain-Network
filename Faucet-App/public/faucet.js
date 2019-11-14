@@ -66,7 +66,7 @@ $(document).ready(function () {
 		if (!recipientAddress)
 			return showError("Invalid recipientAddress");		
 		if (!isValidPublicAddress(recipientAddress))
-			//return showError("Recipient Address should be a 40-hex lower case string. ");
+			return showError("Recipient Address should be a 40-hex lower case string. ");
 		console.log('recipientAddress -> ', recipientAddress);
 		
 		// 'Value' validation
