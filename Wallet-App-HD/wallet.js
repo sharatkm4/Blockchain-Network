@@ -518,6 +518,8 @@ $(document).ready(function () {
         if (signedTransactionJsonString.length === 0)
 			return showError("Transaction needs to be created and signed first !!");
 		
+		nodeIdUrl = $('#nodeUrl option:selected').attr('id');
+		
 		let restfulUrl = nodeIdUrl + "/transactions/send";
 		let restfulSuccessfulResponse = undefined;
 		let restfulErrorResponse = undefined;
