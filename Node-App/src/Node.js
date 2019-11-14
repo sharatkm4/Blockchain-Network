@@ -1576,6 +1576,10 @@ module.exports = class Node {
                 // At this point, we know that the Pending Transaction can be placed in the Next Block to be Mined.
                 pendingTransactionsToBePlacedInNextBlockForMiningMap.set(inputTransactionJson.from, inputTransactionJson);
 
+                // If the block has the transaction mined already, remove it from the pendingTransaction list
+                this.chain.pendingTransactions = this.chain.pendingTransactions.filter(aTransaction =>
+                    aTransaction.transactionDataHash != inputTransactionJson.transactionDataHash);
+
             } else {
                 console.log('from address does not have enough balance and the transaction will be ignored');
             }
