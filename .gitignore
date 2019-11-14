@@ -5,3 +5,6 @@
 /Miner-App/node_modules
 /Miner-App/package-lock.json
 /Wallet-App-HD/.idea
+/Faucet-App/.idea
+/Faucet-App/node_modules
+/Faucet-App/package-lock.json

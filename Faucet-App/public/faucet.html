@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Faucet app</title>
+    <link rel="stylesheet" type="text/css" href="faucet.css"/>
+    <script src="lib/ethers.min.js"></script>
+    <script src="lib/jquery-3.1.1.min.js"></script>
+    <script src="lib/jquery.qrcode.min.js"></script>	
+	<script src="lib/utils.js"></script>
+	<script src="lib/elliptic.min.js"></script>
+    <script src="lib/crypto-js.js"></script>
+    <script src="lib/CryptoUtils.js"></script>
+	<script src="lib/Transaction.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="faucet.js"></script>
+</head>
+
+<body>
+<header id="menu">
+    <a href="#" id="linkHome">Home</a>    
+	<a href="#" id="linkFaucet" class="after-login">Faucet</a>
+</header>
+
+<main>
+    <section id="loadingBox">Loading ...</section>
+
+    <section id="infoBox"><header>x</header><p>Info</p></section>
+
+    <section id="errorBox"><header>x</header><p>Error</p></section>
+
+    <section id="viewHome">
+        <h1>Faucet App</h1>
+        Welcome to the Faucet App using <b>Test Blockchain network as part of Kingsland University</b>.
+        <ul>
+            <li>The faucet is an app that holds some coins which is donated from the genesis transaction.</li>
+            <li>The faucet works like a wallet.</li>
+            <li>It sends 1 coin (or less) to anyone who requests coins. Limits one request per address per hour.</li>            
+        </ul>
+    </section>
+	
+	<section id="viewFaucet">
+        <h1>Faucet</h1>
+        
+        
+        <div id="divSignAndSendTransaction">
+			<div><span>NodeURL:</span><select name="nodeUrl" id="nodeUrl">
+							<option id="http://localhost:5555">Node5555</option>
+							<option id="http://localhost:5556">Node5556</option>
+							<option id="http://localhost:5557">Node5557</option>
+							<option id="http://localhost:5558">Node5558</option>
+							</select></div>
+			
+			<div><span>Faucet Sender:</span><input type="text" class="readOnlyInputText" id="faucetSenderAddress" value="acdac8eb615db86c717c094984727dace63bdf52" readonly size="45"></div>
+            <div><span>Recipient:</span><input type="text" id="recipientAddress" size="45"></div>
+            <div><span>Value (Max of 1 coin -> 1,000,000 micro-coins):</span><input type="number" id="transferValue"/></div>			
+			<input type="button" id="buttonSendTestCoins" value="Send me test coins"/>
+			<textarea id="textareaSendTransactionResult" class="result" readonly="true"></textarea>
+			
+        </div>
+    </section>
+	
+</main>
+
+<footer>Faucet App</footer>
+</body>
+</html>

@@ -20,8 +20,7 @@ const genesisData = "genesis tx";
 const genesisMinedInBlockIndex = 0;
 const genesisTransferSuccessful = true;
 
-//TODO
-let faucetAddress = "c3293572dbe6ebc60de4a20ed0e21446cae66b17";
+let faucetAddress = "acdac8eb615db86c717c094984727dace63bdf52";
 
 const genesisCoinBaseTransaction = new Transaction(
     genesisFromAddress,
