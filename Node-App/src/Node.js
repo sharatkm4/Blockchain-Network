@@ -498,7 +498,8 @@ module.exports = class Node {
         // Sort transactions in descending order of fees
         pendingTransactionsConsideredForNextBlock.sort(function(a, b) { return b.fee - a.fee });
 
-        let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+        //let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+        let pendingTransactionsToBePlacedInNextBlockForMiningList = [];
 
         let confirmedBalancesMap = this.chain.getConfirmedBalances();
 
@@ -553,7 +554,8 @@ module.exports = class Node {
                 }
 
                 // At this point, we know that the Pending Transaction can be placed in the Next Block to be Mined.
-                pendingTransactionsToBePlacedInNextBlockForMiningMap.set(pendingTransaction.from, pendingTransaction);
+                //pendingTransactionsToBePlacedInNextBlockForMiningMap.set(pendingTransaction.from, pendingTransaction);
+                pendingTransactionsToBePlacedInNextBlockForMiningList.push(pendingTransaction);
 
             } else  {
                 // if 'from' Address does not have enough fees, remove it from the pending transaction list
@@ -582,7 +584,8 @@ module.exports = class Node {
         let transactionsToBePlacedInNextBlockForMining = [ coinbaseTransaction ];
         transactionsToBePlacedInNextBlockForMining.push.apply(
             transactionsToBePlacedInNextBlockForMining,
-            Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+            //Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+            pendingTransactionsToBePlacedInNextBlockForMiningList);
 
         // console.log('nextBlockIndex = ', nextBlockIndex);
         // console.log('this.chain.blocks =', this.chain.blocks);
@@ -1399,7 +1402,8 @@ module.exports = class Node {
         // Block reward for the miner
         let coinbaseTransactionValue = 5000000;
 
-        let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+        // let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
+        let pendingTransactionsToBePlacedInNextBlockForMiningList = [];
 
         // Go through each Transaction and validate it.
         for (let i = 0; i < blockToValidate.transactions.length; i++) {
@@ -1574,7 +1578,8 @@ module.exports = class Node {
                 }
 
                 // At this point, we know that the Pending Transaction can be placed in the Next Block to be Mined.
-                pendingTransactionsToBePlacedInNextBlockForMiningMap.set(inputTransactionJson.from, inputTransactionJson);
+                // pendingTransactionsToBePlacedInNextBlockForMiningMap.set(inputTransactionJson.from, inputTransactionJson);
+                pendingTransactionsToBePlacedInNextBlockForMiningList.push(inputTransactionJson);
 
                 // If the block has the transaction mined already, remove it from the pendingTransaction list
                 this.chain.pendingTransactions = this.chain.pendingTransactions.filter(aTransaction =>
@@ -1605,7 +1610,8 @@ module.exports = class Node {
         let transactionsToBePlacedInNextBlockForMining = [ coinbaseTransaction ];
         transactionsToBePlacedInNextBlockForMining.push.apply(
             transactionsToBePlacedInNextBlockForMining,
-            Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+            //Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
+            pendingTransactionsToBePlacedInNextBlockForMiningList);
 
 
         console.log('End validateTransactionsInBlock..');
