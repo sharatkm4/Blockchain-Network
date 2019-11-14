@@ -922,7 +922,8 @@ module.exports = class Node {
         console.log('synchronizeChainFromPeerResponse -> ', synchronizeChainFromPeerResponse);
 
         // Synchronize the pending transactions from peer
-        //await this.synchronizePendingTransactionFromPeer(getNodeInfoSuccessResponse);
+        let synchronizePendingTransactionFromPeerResponse = await this.synchronizePendingTransactionFromPeer(getNodeInfoSuccessResponse);
+        console.log('synchronizePendingTransactionFromPeerResponse -> ', synchronizePendingTransactionFromPeerResponse);
 
         let response = {
             message: `Connected to peer: ${inputJson.peerUrl}`
@@ -945,13 +946,13 @@ module.exports = class Node {
         let transactionsPendingResponseData = undefined;
         await axios.get(transactionsPendingRestfulUrl, {timeout: restfulCallTimeout})
             .then(function (response) {
-                //console.log('transactionsPending.response.status: ', response.status);
-                console.log('transactionsPending.response.data: ', response.data);
+                console.log('synchronizePendingTransactionFromPeerToNode.response.status: ', response.status);
+                //console.log('synchronizePendingTransactionFromPeerToNode.response.data: ', response.data);
                 transactionsPendingResponseData = response.data;
             })
             .catch(function (error) {
-                console.log('transactionsPending.error.response.status: ', error.response.status);
-                console.log('transactionsPending.error.response.data: ', error.response.data);
+                console.log('synchronizePendingTransactionFromPeerToNode.error.response.status: ', error.response.status);
+                console.log('synchronizePendingTransactionFromPeerToNode.error.response.data: ', error.response.data);
             });
 
         // If there is no response, delete the peer node from the list of "peers".
@@ -970,7 +971,7 @@ module.exports = class Node {
             let pendingTransaction = transactionsPendingResponseData[i];
             let sendTransactionResponse = this.sendTransaction(pendingTransaction);
 
-            if (sendTransactionResponse.hasOwnProperty("errorMsg")) {
+            if (!sendTransactionResponse.hasOwnProperty("errorMsg")) {
                 console.log('Successful sendTransaction from peer -> node: ', sendTransactionResponse);
             } else {
                 console.log('Failed sendTransaction from peer -> node: ', sendTransactionResponse);
@@ -985,13 +986,13 @@ module.exports = class Node {
             let transactionsSendRestfulUrl = peerInfo.nodeUrl + "/transactions/send";
             await axios.post(transactionsSendRestfulUrl, pendingTransaction, {timeout: restfulCallTimeout})
                 .then(function (response) {
-                    //console.log('transactionsSend.response.status: ', response.status);
-                    //console.log('transactionsSend.response.data: ', response.data);
+                    console.log('synchronizePendingTransactionFromNodeToPeer.response.status: ', response.status);
+                    //console.log('synchronizePendingTransactionFromNodeToPeer.response.data: ', response.data);
                     console.log('Successful sendTransaction from node -> peer: ', response.data);
                 })
                 .catch(function (error) {
-                    //console.log('transactionsSend.error.response.status: ', error.response.status);
-                    //console.log('transactionsSend.error.response.data: ', error.response.data);
+                    console.log('synchronizePendingTransactionFromNodeToPeer.error.response.status: ', error.response.status);
+                    //console.log('synchronizePendingTransactionFromNodeToPeer.error.response.data: ', error.response.data);
                     console.log('Failed sendTransaction from node -> peer: ', error.response.data);
                 });
         }
