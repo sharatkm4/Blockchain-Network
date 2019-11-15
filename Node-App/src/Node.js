@@ -469,23 +469,6 @@ module.exports = class Node {
     // This endpoint will prepare a block candidate and the miner will calculate the nonce for it.
     getMiningJob(minerAddress) {
 
-        /*this.chain.pendingTransactions.push({
-            "from": "0825b1b7d17ea1c1ff9ebe1c74d7c6d8a4a104dc",
-            "to": "1234567890abcdef1234567890abcdef12345678",
-            "value": 3000000,
-            "fee": 100,
-            "dateCreated": "2019-11-02T18:51:24.965Z", // after genesis block
-            "data": "genesis tx",
-            "senderPubKey": "00000000000000000000000000000000000000000000000000000000000000000",
-            "transactionDataHash": "123456789012345bd456790be94a0b56557a4f3ec6b05f06a19e74e73368c82b",
-            "senderSignature": [
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000"
-            ],
-            "minedInBlockIndex": null,
-            "transferSuccessful": false
-        });*/
-
         minerAddress = minerAddress.trim();
         minerAddress = minerAddress.toLowerCase();
 
