@@ -30,7 +30,11 @@ $(document).ready(function () {
 		$("a#blocksId").attr('href', nodeIdUrl+'/blocks');
 		$("a#blocksByIndexId").attr('href', nodeIdUrl+'/blocks/0');
 		
-
+		$("a#pendingTrnId").attr('href', nodeIdUrl+'/transactions/pending');
+		$("a#confirmedTrnId").attr('href', nodeIdUrl+'/transactions/confirmed');
+		$("a#trnByHashId").attr('href', nodeIdUrl+'/transactions/593e3a0c07c074002a945ae2a0817cf526a2830e4ead0e25ca3a7842fc5e629b');
+		
+	
 		
 	}
 

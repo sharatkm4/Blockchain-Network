@@ -69,10 +69,20 @@
 			<div id="viewBlocks">			 		
 			<ul>
 				<li>GET <a href="/blocks" id="blocksId" title="All blocks Endpoint -> The endpoint will print all the blocks in the node’s chain.">/blocks</a></li>
-				<li>GET <a href="/blocks/:index" id="blocksByIndexId" title="Block by Index Endpoint -> The endpoint will print the block with the index that you specify">/blocks/:index</a></li>
+				<li>GET <a href="/blocks/:index" id="blocksByIndexId" title="Block by Index Endpoint -> The endpoint will print the block with the index that you specify.">/blocks/:index</a></li>
 			<ul>	
 		</div>
-
+		
+		<h1>Transactions</h1>
+			<div id="viewTransactions">			 		
+			<ul>
+				<li>GET <a href="/transactions/pending" id="pendingTrnId" title="Get Pending Transactions Endpoint -> This endpoint will print the list with transactions that have not been mined.">/transactions/pending</a></li>
+				<li>GET <a href="/transactions/confirmed" id="confirmedTrnId" title="Get Confirmed Transactions -> This endpoint will print the list of the transactions that are included in blocks.">/transactions/confirmed</a></li>
+				<li>GET <a href="/transactions/{hash}" id="trnByHashId" title="Get Transaction by Hash Endpoint -> This endpoint will return a transaction identified by hash.">/transactions/{hash}</a></li>
+			<ul>	
+		</div>
+		
+		
     </section>
 	
 </main>
