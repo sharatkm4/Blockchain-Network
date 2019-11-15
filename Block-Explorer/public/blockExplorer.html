@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Explorer App</title>
+    <link rel="stylesheet" type="text/css" href="blockExplorer.css"/>
+    <script src="lib/ethers.min.js"></script>
+    <script src="lib/jquery-3.1.1.min.js"></script>
+    <script src="lib/jquery.qrcode.min.js"></script>	
+	<script src="lib/utils.js"></script>
+	<script src="lib/elliptic.min.js"></script>
+    <script src="lib/crypto-js.js"></script>
+    <script src="lib/CryptoUtils.js"></script>
+	<script src="lib/Transaction.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="blockExplorer.js"></script>
+</head>
+
+<body>
+<header id="menu">
+    <a href="#" id="linkHome">Home</a>	
+</header>
+
+<main>
+    <section id="loadingBox">Loading ...</section>
+
+    <section id="infoBox"><header>x</header><p>Info</p></section>
+
+    <section id="errorBox"><header>x</header><p>Error</p></section>
+
+    <section id="viewHome">
+        <h1>Block Explorer App</h1>
+        Welcome to the Block Explorer App using <b>Test Blockchain network as part of Kingsland University</b>.
+        <ul>
+            <li>The Block Explorer is an app that provides info about the blockchain network.</li>
+			<li>Hover on the below hyper links to get more info.</li>
+            <!--<li>View Blocks</li>
+			<li>View Confirmed Transactions</li>
+			<li>View Pending Transactions</li>
+			<li>View Accounts and Balances</li>
+			<li>View Peers</li>
+			<li>View Network Difficulty</li> -->
+        </ul>
+		
+		<h1>Node URL:</h1>
+		<div id="viewNodeIdUrl">	
+			<select name="selectNodeUrl" id="selectNodeUrlID" >
+				<option id="http://localhost:5555">Node5555</option>
+				<option id="http://localhost:5556">Node5556</option>
+				<option id="http://localhost:5557">Node5557</option>
+				<option id="http://localhost:5558">Node5558</option>
+			</select>
+		</div>
+		
+		<h1>General Info and Debug</h1>
+		<div id="viewInfoAndDebug">	
+			<ul>				
+				<li>GET <a href="/info" id="infoId" title="General information -> Endpoint for receiving general information about the node.">/info</a> </li>
+				<li>GET <a href="/debug" id="debugId" title="Debug endpoint -> This endpoint will print everything about the node. The blocks, peers, chain, pending transactions and much more.">/debug</a></li>
+				<li>GET <a href="/debug/reset-chain" id="debugResetChainId" title="Reset the chain Endpoint -> This endpoint will reset the chain and start it from the beginning; this is used only for debugging.">/debug/reset-chain</a></li>
+				<!--<li>GET <a href="/debug/mine/:minerAddress/:difficulty">/debug/mine/:minerAddress/:difficulty</a></li>-->
+			<ul>	
+		</div>
+		
+		<h1>Blocks</h1>
+			<div id="viewBlocks">			 		
+			<ul>
+				<li>GET <a href="/blocks" id="blocksId" title="All blocks Endpoint -> The endpoint will print all the blocks in the node’s chain.">/blocks</a></li>
+				<li>GET <a href="/blocks/:index" id="blocksByIndexId" title="Block by Index Endpoint -> The endpoint will print the block with the index that you specify">/blocks/:index</a></li>
+			<ul>	
+		</div>
+
+    </section>
+	
+</main>
+
+<footer>Block Explorer App</footer>
+</body>
+</html>

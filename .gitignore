@@ -8,3 +8,6 @@
 /Faucet-App/.idea
 /Faucet-App/node_modules
 /Faucet-App/package-lock.json
+/Block-Explorer/.idea
+/Block-Explorer/node_modules
+/Block-Explorer/package-lock.json
