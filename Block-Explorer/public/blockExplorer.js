@@ -39,9 +39,9 @@ $(document).ready(function () {
 		$("a#trnByAddrId").attr('href', nodeIdUrl+'/address/acdac8eb615db86c717c094984727dace63bdf52/transactions');
 		$("a#balanceByAddrId").attr('href', nodeIdUrl+'/address/acdac8eb615db86c717c094984727dace63bdf52/balance');
 		
-		$("a#getMiningJobId").attr('href', nodeIdUrl+'/mining/get-mining-job/bcbf5558d48ec6424bac87e7a5ec98fc3e8d41f6');
+		$("a#getMiningJobId").attr('href', nodeIdUrl+'/mining/get-mining-job/c3293572dbe6ebc60de4a20ed0e21446cae66b17');
 		$("a#submitMinedJobId").attr('href', nodeIdUrl+'/mining/submit-mined-block');
-		$("a#debugMinedBlockId").attr('href', nodeIdUrl+'/debug/mine/bcbf5558d48ec6424bac87e7a5ec98fc3e8d41f6/3');
+		$("a#debugMinedBlockId").attr('href', nodeIdUrl+'/debug/mine/c3293572dbe6ebc60de4a20ed0e21446cae66b17/3');
 	
 		$("a#peersId").attr('href', nodeIdUrl+'/peers');
 		$("a#peersConnectId").attr('href', nodeIdUrl+'/peers/connect');
