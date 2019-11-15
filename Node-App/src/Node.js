@@ -554,7 +554,7 @@ module.exports = class Node {
             minerAddress, // to: address (40 hex digits) string
             coinbaseTransactionValue, // value: integer (non negative)
             0, // fee: integer (non negative)
-            GenesisBlock.genesisDateCreated, // ISO8601_string
+            new Date().toISOString(), // ISO8601_string
             "coinbase tx", // data: string (optional)
             GenesisBlock.genesisSenderPubKey, // senderPubKey: hex_number[65] string
             // senderSignature: hex_number[2][64] : 2-element array of (64 hex digit) strings
@@ -675,6 +675,17 @@ module.exports = class Node {
         let leadingZeros = ''.padStart(potentialNewBlockCandidate.difficulty, '0');
         if (!inputMinedBlockJson.blockHash.startsWith(leadingZeros)) {
             return { errorMsg: "Invalid Mined Block: 'blockHash' field value provided does not match the Block difficulty" }
+        }
+
+        // Then if the block is still not mined, the chain is extended (Mined by a different miner !!)
+        // If the block is already mined by a different miner, this block is invalid and throw an error
+        if (potentialNewBlockCandidate.index < this.chain.blocks.length) {
+            return { errorMsg: "This block index is already mined !!" }
+        }
+
+        // Invalid block when the index is greater than the current block index
+        if (potentialNewBlockCandidate.index > this.chain.blocks.length) {
+            return { errorMsg: "This block has an invalid index !!" }
         }
 
         // Verify if the minedBlock's prevBlockHash from request matches with the chain's prevBlockHash
