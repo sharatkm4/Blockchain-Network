@@ -44,7 +44,7 @@ const genesisBlock = new Block(
     genesisBlockIndex,
     [genesisCoinBaseTransaction],
     genesisBlockDifficulty,
-    genesisPrevBlockhash,
+    undefined,
     genesisFromAddress,
     genesisNonce,
     genesisDateCreated);
