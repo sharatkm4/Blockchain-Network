@@ -298,7 +298,10 @@ $(document).ready(function () {
 					$('#textareaDisplayBalance').val(displayBalanceInfo);*/
 					
 					div.qrcode(publicAddress);
-					div.append($(`<p>${publicAddress}: ${restfulSuccessfulResponse.confirmedBalance} Micro coins </p>`));
+					div.append($(`<p>${publicAddress} </p>`));
+					div.append($(`<p>Safe Balance (6 confirmations or more): ${restfulSuccessfulResponse.safeBalance} Micro coins </p>`));
+					div.append($(`<p>Confirmed Balance (1 confirmation or more): ${restfulSuccessfulResponse.confirmedBalance} Micro coins </p>`));
+					div.append($(`<p>Pending Balance (0 or more confirmations):  ${restfulSuccessfulResponse.pendingBalance} Micro coins </p>`));
 					$('#divAddressesAndBalances').append(div);
 				}			
 				
