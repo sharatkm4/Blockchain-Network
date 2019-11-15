@@ -45,6 +45,8 @@ module.exports = class Block {
                 'value': transactionJson.value,
                 'fee': transactionJson.fee,
                 'dateCreated': transactionJson.dateCreated,
+                'data': transactionJson.data,
+                'senderPubKey': transactionJson.senderPubKey,
                 'transactionDataHash': transactionJson.transactionDataHash,
                 'senderSignature': transactionJson.senderSignature,
                 'minedInBlockIndex': transactionJson.minedInBlockIndex,
