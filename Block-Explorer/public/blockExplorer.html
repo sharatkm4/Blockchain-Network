@@ -79,6 +79,35 @@
 				<li>GET <a href="/transactions/pending" id="pendingTrnId" title="Get Pending Transactions Endpoint -> This endpoint will print the list with transactions that have not been mined.">/transactions/pending</a></li>
 				<li>GET <a href="/transactions/confirmed" id="confirmedTrnId" title="Get Confirmed Transactions -> This endpoint will print the list of the transactions that are included in blocks.">/transactions/confirmed</a></li>
 				<li>GET <a href="/transactions/{hash}" id="trnByHashId" title="Get Transaction by Hash Endpoint -> This endpoint will return a transaction identified by hash.">/transactions/{hash}</a></li>
+				<li>POST <a href="/transactions/send" id="trnSendId" title="Send Transaction -> With this endpoint, you can broadcast a transaction to the network.">/transactions/send</a></li>
+			<ul>	
+		</div>
+		
+		<h1>Balances and Addresses</h1>
+			<div id="viewBalancesAndAddresses">			 		
+			<ul>
+				<li>GET <a href="/balances" id="balanceId" title="List All Account Balance -> This endpoint will return all the balances in the network.">/balances</a></li>
+				<li>GET <a href="/address/{address}/transactions" id="trnByAddrId" title="List Transactions for Address -> This endpoint will print all transactions for address.">/address/{address}/transactions</a></li>
+				<li>GET <a href="/address/{address}/balance" id="balanceByAddrId" title="Get Balance for Address Endpoint -> This endpoint will return the balance of a specified address in the network.">/address/{address}/balance</a></li>
+			<ul>	
+		</div>
+		
+		<h1>Mining</h1>
+			<div id="viewMining">			 		
+			<ul>
+				<li>GET <a href="/mining/get-mining-job/{minerAddress}" id="getMiningJobId" title="Get Mining Job Endpoint -> This endpoint will prepare a block candidate and the miner will calculate the nonce.">/mining/get-mining-job/{minerAddress}</a></li>
+				<li>POST <a href="/mining/submit-mined-block" id="submitMinedJobId" title="Submit Block Endpoint -> With this endpoint you will submit a mined block.">/mining/submit-mined-block</a></li>
+				<li>GET <a href="/debug/mine/{minerAddress}/{difficulty}" id="debugMinedBlockId" title="Debug: Mine a Block Endpoint -> With this endpoint you can mine with the difficulty that you want. Use it only for debugging purposes.">/debug/mine/{minerAddress}/{difficulty}</a></li>
+			<ul>	
+		</div>
+		
+		
+		<h1>Peers</h1>
+			<div id="viewPeers">			 		
+			<ul>
+				<li>GET <a href="/peers" id="peersId" title="List All Peers Endpoint -> This endpoint will return all the peers of the node.">/peers</a></li>
+				<li>POST <a href="/peers/connect" id="peersConnectId" title="Connect a Peer Endpoint -> With this endpoint, you can manually connect to other nodes.">/peers/connect</a></li>
+				<li>POST <a href="/peers/notify-new-block" id="peersNotifyNewBlockId" title="Notify Peers about New Block Endpoint -> This endpoint will notify the peers about a new block.">/peers/notify-new-block</a></li>
 			<ul>	
 		</div>
 		

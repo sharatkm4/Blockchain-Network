@@ -33,8 +33,20 @@ $(document).ready(function () {
 		$("a#pendingTrnId").attr('href', nodeIdUrl+'/transactions/pending');
 		$("a#confirmedTrnId").attr('href', nodeIdUrl+'/transactions/confirmed');
 		$("a#trnByHashId").attr('href', nodeIdUrl+'/transactions/593e3a0c07c074002a945ae2a0817cf526a2830e4ead0e25ca3a7842fc5e629b');
-		
+		$("a#trnSendId").attr('href', nodeIdUrl+'/transactions/send');
 	
+		$("a#balanceId").attr('href', nodeIdUrl+'/balances');
+		$("a#trnByAddrId").attr('href', nodeIdUrl+'/address/acdac8eb615db86c717c094984727dace63bdf52/transactions');
+		$("a#balanceByAddrId").attr('href', nodeIdUrl+'/address/acdac8eb615db86c717c094984727dace63bdf52/balance');
+		
+		$("a#getMiningJobId").attr('href', nodeIdUrl+'/mining/get-mining-job/bcbf5558d48ec6424bac87e7a5ec98fc3e8d41f6');
+		$("a#submitMinedJobId").attr('href', nodeIdUrl+'/mining/submit-mined-block');
+		$("a#debugMinedBlockId").attr('href', nodeIdUrl+'/debug/mine/bcbf5558d48ec6424bac87e7a5ec98fc3e8d41f6/3');
+	
+		$("a#peersId").attr('href', nodeIdUrl+'/peers');
+		$("a#peersConnectId").attr('href', nodeIdUrl+'/peers/connect');
+		$("a#peersNotifyNewBlockId").attr('href', nodeIdUrl+'/peers/notify-new-block');
+		
 		
 	}
 
