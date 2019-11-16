@@ -490,6 +490,7 @@ module.exports = class Node {
 
         // Block reward for the miner
         let coinbaseTransactionValue = 5000000;
+        let coinBaseTimestamp = new Date().toISOString();
 
         console.log('Pending Transaction Length: ' + pendingTransactionsConsideredForNextBlock.length);
 
@@ -554,7 +555,7 @@ module.exports = class Node {
             minerAddress, // to: address (40 hex digits) string
             coinbaseTransactionValue, // value: integer (non negative)
             0, // fee: integer (non negative)
-            new Date().toISOString(), // ISO8601_string
+            coinBaseTimestamp, // ISO8601_string
             "coinbase tx", // data: string (optional)
             GenesisBlock.genesisSenderPubKey, // senderPubKey: hex_number[65] string
             // senderSignature: hex_number[2][64] : 2-element array of (64 hex digit) strings
