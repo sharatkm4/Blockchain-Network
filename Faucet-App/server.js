@@ -20,8 +20,9 @@ var restfulCallTimeout = 60000; //60 seconds
 // Enable static access to the "/public" folder
 app.use(express.static('public'));
 
+var recipientAddresstoReceivedCoinsTimestampMap = new Map();
 
-async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res) {
+async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res, recipientAddress) {
 	// Send transaction
 	console.log('nodeIdUrl: ', nodeIdUrl);
 	let restfulUrl = nodeIdUrl + "/transactions/send";
@@ -75,6 +76,7 @@ async function sendTransaction(signedTransactionJsonStr, nodeIdUrl, res) {
 
 	} else {
 		// Success response
+		recipientAddresstoReceivedCoinsTimestampMap.set(recipientAddress, new Date().getTime());
 		displaySendTransactionInfo = nodeIdUrl + "/transactions/" + restfulSuccessfulResponse.transactionDataHash;
 		response = JSON.stringify({ message: displaySendTransactionInfo });
 	}
@@ -93,26 +95,45 @@ app.post('/sendCoins', (req, res) => {
 	let senderAddress = CryptoUtils.getPublicAddressFromPublicKey(senderPubKey);
 	console.log('senderAddress: ', senderAddress); //acdac8eb615db86c717c094984727dace63bdf52
 
-	let dateCreated = new Date().toISOString();
-	
-	let transactionToSign = new Transaction(
-				senderAddress, // address (40 hex digits) string
-				req.body.recipientAddress, // address (40 hex digits) string
-				req.body.transferValue, // integer (non negative)
-				req.body.transferFee, // integer (non negative)
-				dateCreated, // ISO8601_string
-				req.body.dataToSend, // string (optional)
-				senderPubKey); // hex_number[65] string
-				
-	// Sign the Transaction to Send and get it's signature.
-	//
-	// Output: A Signature JavaScript object that has the following two main attributes:
-	// 1) r : 64-Hex string of the Signature "r" attribute
-	// 2) s : 64-Hex string of the Signature "s" attribute
-	let signature = CryptoUtils.createSignature(transactionToSign.transactionDataHash, senderPrivateKey);
-	let senderSignatureArray = [ signature.r, signature.s ];
+	let validationSuccess = true;
+	// One request per address per hour validation
+	if (recipientAddresstoReceivedCoinsTimestampMap.has(req.body.recipientAddress)) {
+		let dateTimeRecipientAddressReceivedCoins = recipientAddresstoReceivedCoinsTimestampMap.get(req.body.recipientAddress);
+		let currentTime = new Date().getTime();
 
-	let transactionToSend = {
+		let deltaTime = Math.abs(currentTime - dateTimeRecipientAddressReceivedCoins);
+		let oneHourInMilliseconds = 3600000;
+		if (deltaTime <= oneHourInMilliseconds) {
+			validationSuccess = false;
+			let response = { errorMsg: 'The Recipient Address has already received Coins. Only one request per Public Address per hour is allowed !!!' };
+			console.log('app_post_send_transaction response =', response);
+			res.status(HttpStatus.BAD_REQUEST);
+			res.json(response);
+			//res.end(JSON.stringify(response));
+		}
+	}
+
+	if(validationSuccess){
+		let dateCreated = new Date().toISOString();
+
+		let transactionToSign = new Transaction(
+			senderAddress, // address (40 hex digits) string
+			req.body.recipientAddress, // address (40 hex digits) string
+			req.body.transferValue, // integer (non negative)
+			req.body.transferFee, // integer (non negative)
+			dateCreated, // ISO8601_string
+			req.body.dataToSend, // string (optional)
+			senderPubKey); // hex_number[65] string
+
+		// Sign the Transaction to Send and get it's signature.
+		//
+		// Output: A Signature JavaScript object that has the following two main attributes:
+		// 1) r : 64-Hex string of the Signature "r" attribute
+		// 2) s : 64-Hex string of the Signature "s" attribute
+		let signature = CryptoUtils.createSignature(transactionToSign.transactionDataHash, senderPrivateKey);
+		let senderSignatureArray = [ signature.r, signature.s ];
+
+		let transactionToSend = {
 			from: transactionToSign.from,
 			to: transactionToSign.to,
 			value: transactionToSign.value,
@@ -121,32 +142,33 @@ app.post('/sendCoins', (req, res) => {
 			data: transactionToSign.data,
 			senderPubKey: transactionToSign.senderPubKey,
 			senderSignature: senderSignatureArray
-	};	
-	
-	let signedTransactionJsonStr = JSON.stringify(transactionToSend, undefined, 2);
-		
-	console.log('signedTransactionJson: ', signedTransactionJsonStr);
+		};
+
+		let signedTransactionJsonStr = JSON.stringify(transactionToSend, undefined, 2);
+
+		console.log('signedTransactionJson: ', signedTransactionJsonStr);
 
 
-	sendTransaction(signedTransactionJsonStr, req.body.nodeIdUrl, res)
-		.then( function(response) {
-			console.log('app_post_send_transaction response =', response);
-			res.json(response);
-		})
-		.catch(function (error) { // Any errors will be caught by the "sendTransaction" method so
-			// very unlikely this error below will get executed.
-			// console.log('error =', JSON.stringify(error, undefined, 2));
-			console.log('app_post_send_transaction error =', error);
-			console.log('app_post_send_transaction error.response =', error.response);
+		sendTransaction(signedTransactionJsonStr, req.body.nodeIdUrl, res, transactionToSign.to)
+			.then( function(response) {
+				console.log('app_post_send_transaction response =', response);
+				res.json(response);
+			})
+			.catch(function (error) { // Any errors will be caught by the "sendTransaction" method so
+				// very unlikely this error below will get executed.
+				// console.log('error =', JSON.stringify(error, undefined, 2));
+				console.log('app_post_send_transaction error =', error);
+				console.log('app_post_send_transaction error.response =', error.response);
 
-			if ( error.response !== undefined) {
-				res.json(error.response);
-			}
-			else {
-				res.json(error);
-			}
+				if ( error.response !== undefined) {
+					res.json(error.response);
+				}
+				else {
+					res.json(error);
+				}
 
-		});
+			});
+	}
 	
 });	
 
