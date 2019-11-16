@@ -1591,7 +1591,7 @@ module.exports = class Node {
             blockToValidate.transactions[0].to, // to: address (40 hex digits) string
             coinbaseTransactionValue, // value: integer (non negative)
             0, // fee: integer (non negative)
-            GenesisBlock.genesisDateCreated, // ISO8601_string
+            blockToValidate.transactions[0].dateCreated, // ISO8601_string
             "coinbase tx", // data: string (optional)
             GenesisBlock.genesisSenderPubKey, // senderPubKey: hex_number[65] string
             // senderSignature: hex_number[2][64] : 2-element array of (64 hex digit) strings
