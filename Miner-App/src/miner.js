@@ -68,7 +68,7 @@ async function startMiner() {
     console.log('submitMinedBlockUrl: ', submitMinedBlockUrl);
     console.log('MineOnlyOnce: ', mineOnlyOnce);
 
-    while (true) {
+    //while (true) {
         // Step 1: Get Mining job from the node
         console.log();
         console.log('Step 1: Get Mining job from the node');
@@ -90,10 +90,12 @@ async function startMiner() {
 
         if (getMiningJobSuccessResponse === undefined && getMiningJobErrorResponse === undefined) {
             console.log('Node is not responding in order to get mining job. Miner will be stopped !!');
-            break;
+            //break;
+            return;
         } else if(getMiningJobErrorResponse !== undefined) {
             console.log('Error while retrieving mining job. Miner will be stopped !!');
-            break;
+            //break;
+            return;
         }
 
 
@@ -129,7 +131,7 @@ async function startMiner() {
         }
 
         if (blockToBeMined === undefined) {
-            continue;
+            //continue;
         }
 
         // Step 3: Submit mined block to the node so that it can be added to the chain
@@ -158,7 +160,8 @@ async function startMiner() {
 
         if (submitMinedJobSuccessResponse === undefined && submitMinedJobErrorResponse === undefined) {
             console.log('Node is not responding in order to submit mining block. Miner will be stopped !!');
-            break;
+            // break;
+            return;
         } else if(submitMinedJobErrorResponse !== undefined) {
             console.log('Error while submitting mining block !!');
         } else {
@@ -167,14 +170,25 @@ async function startMiner() {
 
         if (mineOnlyOnce) {
             console.log('Stop mining...');
-            break;
+            //break;
+            return;
         }
 
-    }
+    //}
 
 }
 
-startMiner();
+var delayInMilliseconds = 500;
+
+if (mineOnlyOnce) {
+    startMiner();
+
+} else {
+    setInterval(startMiner, delayInMilliseconds);
+}
+
+
+//startMiner();
 
 
 
