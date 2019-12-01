@@ -1,6 +1,6 @@
 $(document).ready(function () {
-    const derivationPath = "m/44'/60'/0'/0/";
-    const provider = ethers.providers.getDefaultProvider('ropsten');
+    //const derivationPath = "m/44'/60'/0'/0/";
+    //const provider = ethers.providers.getDefaultProvider('ropsten');
 
 	let nodeIdUrl = "http://localhost:5555";
 	//let nodeIdUrl = "https:/stormy-everglades-34766.herokuapp.com";
@@ -155,7 +155,7 @@ $(document).ready(function () {
 	
 	
 
-	async function signAndSendTransaction() {
+	/*async function signAndSendTransaction() {
 		console.log('Start signAndSendTransaction...');
 		
 		// Faucet Sender Public key and Address is pre-determined and hardcoded
@@ -301,6 +301,6 @@ $(document).ready(function () {
 		}
 		
 		console.log('Start signAndSendTransaction...');
-	}	
+	}*/	
 
 });
