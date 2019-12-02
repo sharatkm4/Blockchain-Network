@@ -18,17 +18,17 @@ Implement a simple fully-functional blockchain network consisting of nodes, mine
 	&emsp;&emsp;Submit the mined job to the Node in order to build the next block in the chain. <br/>
 	
 <b>Wallet App</b> <br/>
-	&emsp;&emsp;Manage private keys + sign and send transactions <br/>
-	&emsp;&emsp;Based on HD wallet and password protected <br/>
-	&emsp;&emsp;&emsp;&emsp;Create new wallet / open existing wallet / Delete wallet <br/>
-	&emsp;&emsp;&emsp;&emsp;Check account balance for certain blockchain address <br/>
-	&emsp;&emsp;&emsp;&emsp;Create, sign and send transactions <br/>
+	&emsp;&emsp;Manage private keys + sign and send transactions. <br/>
+	&emsp;&emsp;Based on HD wallet and password protected. <br/>
+	&emsp;&emsp;Create new wallet / open existing wallet / Delete wallet <br/>
+	&emsp;&emsp;Check account balance for certain blockchain address. <br/>
+	&emsp;&emsp;Create, sign and send transactions. <br/>
 	
 <b>Faucet App</b> <br/>
-	&emsp;&emsp;A web app that holds some coins which is donated from the genesis transaction<br/>
-	&emsp;&emsp;The faucet works like a wallet with hard coded private key <br/>
-	&emsp;&emsp;It sends 1 coin (or less) to anyone who requests coins (one request per address per hour) <br/>
-	&emsp;&emsp;For each request, the faucet creates a transaction, signs it and sends it to the specified node app URL <br/>
+	&emsp;&emsp;A web app that holds some coins which is donated from the genesis transaction. <br/>
+	&emsp;&emsp;The faucet works like a wallet with hard coded private key. <br/>
+	&emsp;&emsp;It sends 1 coin (or less) to anyone who requests coins (one request per address per hour). <br/>
+	&emsp;&emsp;For each request, the faucet creates a transaction, signs it and sends it to the specified node app URL. <br/>
 
 
 <b>Blockchain Explorer App</b> <br/>
