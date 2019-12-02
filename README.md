@@ -42,12 +42,16 @@ Implement a simple fully-functional blockchain network consisting of nodes, mine
 <b>Steps to run:</b> <br/>
 
 <b>Run Node-App</b> <br/>
+&emsp;&emsp;npm init <br/>
+&emsp;&emsp;npm install <br/>
 &emsp;&emsp;node src/server.js --listeningPort 5555 --listeningHost localhost <br/>
 &emsp;&emsp;node src/server.js --listeningPort 5556 --listeningHost localhost <br/>
 &emsp;&emsp;node src/server.js --listeningPort 5557 --listeningHost localhost <br/>
 &emsp;&emsp;node src/server.js --listeningPort 5558 --listeningHost localhost <br/>
 
 <b>Run Miner-App</b> <br/>
+&emsp;&emsp;npm init <br/>
+&emsp;&emsp;npm install <br/>
 &emsp;&emsp;node src/miner.js --listeningNodePort 5555 --listeningNodeHost localhost --minerAddress 1e5506bdb8596eff354ffd5638146aea3646d8bb --mineOnlyOnce true <br/>
 &emsp;&emsp;node src/miner.js --listeningNodePort 5556 --listeningNodeHost localhost --minerAddress 1e5506bdb8596eff354ffd5638146aea3646d8bb --mineOnlyOnce true <br/>
 &emsp;&emsp;node src/miner.js --listeningNodePort 5557 --listeningNodeHost localhost --minerAddress 1e5506bdb8596eff354ffd5638146aea3646d8bb --mineOnlyOnce true <br/>
@@ -57,10 +61,14 @@ Implement a simple fully-functional blockchain network consisting of nodes, mine
 &emsp;&emsp;Open index.html in browser<br/>
 
 <b>Run Faucet-App</b> <br/>
+&emsp;&emsp;npm init <br/>
+&emsp;&emsp;npm install <br/>
 &emsp;&emsp;node server.js --listeningPort 7777 --listeningHost localhost <br/>
 &emsp;&emsp;Launch URL -> http://localhost:7777/faucet.html# <br/>
 
 <b>Run Block-Explorer</b> <br/>
+&emsp;&emsp;npm init <br/>
+&emsp;&emsp;npm install <br/>
 &emsp;&emsp;node server.js --listeningPort 9999 --listeningHost localhost <br/>
 &emsp;&emsp;Launch URL -> http://localhost:9999/blockExplorer.html# <br/>
 
