@@ -481,7 +481,6 @@ module.exports = class Node {
         // Sort transactions in descending order of fees
         pendingTransactionsConsideredForNextBlock.sort(function(a, b) { return b.fee - a.fee });
 
-        //let pendingTransactionsToBePlacedInNextBlockForMiningMap = new Map();
         let pendingTransactionsToBePlacedInNextBlockForMiningList = [];
 
         let confirmedBalancesMap = this.chain.getConfirmedBalances();
@@ -568,7 +567,6 @@ module.exports = class Node {
         let transactionsToBePlacedInNextBlockForMining = [ coinbaseTransaction ];
         transactionsToBePlacedInNextBlockForMining.push.apply(
             transactionsToBePlacedInNextBlockForMining,
-            //Array.from(pendingTransactionsToBePlacedInNextBlockForMiningMap.values()));
             pendingTransactionsToBePlacedInNextBlockForMiningList);
 
         // console.log('nextBlockIndex = ', nextBlockIndex);

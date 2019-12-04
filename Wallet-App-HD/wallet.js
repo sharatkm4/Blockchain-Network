@@ -1,6 +1,6 @@
 $(document).ready(function () {
     const derivationPath = "m/44'/60'/0'/0/";
-    const provider = ethers.providers.getDefaultProvider('ropsten');
+    //const provider = ethers.providers.getDefaultProvider('ropsten');
 
 	let nodeIdUrl = "http://localhost:5555";
 	//let nodeIdUrl = "https:/stormy-everglades-34766.herokuapp.com";
@@ -240,15 +240,6 @@ $(document).ready(function () {
 
 			for (let i=0; i<5; i++) {
 				let div = $('<div id="qrcode">');
-				//let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey, provider);
-
-				/*wallet.getBalance()
-					.then((balance) => {
-						div.qrcode(wallet.address);
-						div.append($(`<p>${wallet.address}: ${ethers.utils.formatEther(balance)} ETH </p>`));						
-						$('#divAddressesAndBalances').append(div);
-					})
-					.catch(showError)*/
 					
 				//let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);
 				//let publicAddress = wallet.address.toLowerCase().slice(2);
@@ -291,12 +282,7 @@ $(document).ready(function () {
 				else if (restfulErrorResponse !== undefined) {
 					errorMessage = `Attempt to call ${restfulUrl } to obtain account balance failed due to error encountered !!`;
 					showError(errorMessage);					
-				} else { // restfulSuccessfulResponse !== undefined
-					/*let displayBalanceInfo = "Balance (6 confirmations or more): " + restfulSuccessfulResponse.safeBalance + "\n" +
-							"Balance (1 confirmation or more): " + restfulSuccessfulResponse.confirmedBalance + "\n" +
-							"Balance (pending - 0 or more confirmations): " + restfulSuccessfulResponse.pendingBalance;
-					$('#textareaDisplayBalance').val(displayBalanceInfo);*/
-					
+				} else { // restfulSuccessfulResponse !== undefined					
 					div.qrcode(publicAddress);
 					div.append($(`<p>${publicAddress} </p>`));
 					div.append($(`<p>Safe Balance (6 confirmations or more): ${restfulSuccessfulResponse.safeBalance} Micro coins </p>`));
@@ -330,21 +316,7 @@ $(document).ready(function () {
 
 			let masterNode = ethers.HDNode.fromMnemonic(wallet.mnemonic);	
 
-			for (let i=0; i<5; i++) {
-				/*let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey, provider);
-				let address = wallet.address;
-				
-				wallets[address] = wallet;
-				let option = $(`<option id=${wallet.address}>`).text(address);
-				$('#senderAddress').append(option);*/
-				
-				/*let wallet = new ethers.Wallet(masterNode.derivePath(derivationPath + i).privateKey);				
-				let address = wallet.address;
-				//let address = wallet.address.toLowerCase().slice(2);
-				
-				wallets[address] = wallet;				
-				let option = $(`<option id=${wallet.address}>`).text(address);
-				$('#senderAddress').append(option);*/
+			for (let i=0; i<5; i++) {				
 				
 				// Public address derived from ethers wallet has different length. Switching to manually derived one and not using wallet.
 				let privateKey = masterNode.derivePath(derivationPath + i).privateKey;				
@@ -363,43 +335,7 @@ $(document).ready(function () {
 				
 			}
 		}			
-    }
-
-    /*function signTransaction() {
-        let senderAddress = $('#senderAddress option:selected').attr('id');
-
-		let wallet = wallets[senderAddress];
-		if (!wallet)
-			return showError("Invalid address!");
-
-		let recipient = $('#recipientAddress').val();
-		if (!recipient)
-			return showError("Invalid recipient");
-
-		let value = $('#transferValue').val();
-		if (!value)
-			return showError("Invalid transfer value!");
-
-		wallet.getTransactionCount()
-			.then(signTransaction)
-			.catch(showError);
-			
-		function signTransaction(nonce) {
-			let transaction = {
-				nonce,
-				gasLimit: 21000,
-				gasPrice: ethers.utils.bigNumberify("20000000000"),
-				to: recipient,
-				value: ethers.utils.parseEther(value.toString()),
-				data: "0x",
-				chainId: provider.chainId
-			};
-
-			let signedTransaction = wallet.sign(transaction);
-			$('#textareaSignedTransaction').val(signedTransaction);
-		}
-		
-    }*/
+    }    
 	
 	function signTransaction() {
 		console.log('Start signTransaction...');
@@ -507,19 +443,7 @@ $(document).ready(function () {
 		console.log('End signTransaction...');
 	}
 
-    /*function sendSignedTransaction() {
-        let signedTransaction = $('#textareaSignedTransaction').val();		
-		provider.sendTransaction(signedTransaction)
-			.then(hash => {
-				showInfo("Transaction hash: " + hash);
-				
-				let etherscanUrl = 'https://ropsten.etherscan.io/tx/' + hash;
-				$('#textareaSendTransactionResult').val(etherscanUrl);
-			})
-			.catch(showError);
-    }*/
-	
-	async function sendSignedTransaction() {
+    async function sendSignedTransaction() {
 		console.log('Start sendSignedTransaction...');
 		
 		nodeIdUrl = $('#nodeUrlID option:selected').attr('id');
